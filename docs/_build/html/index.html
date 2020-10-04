@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Welcome to markowitz-portfolio’s documentation! &#8212; markowitz-portfolio  documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-src.stock_selection">
+<span id="welcome-to-markowitz-portfolio-s-documentation"></span><h1>Welcome to markowitz-portfolio’s documentation!<a class="headerlink" href="#module-src.stock_selection" title="Permalink to this headline">¶</a></h1>
+<p>The stock_selection module includes modules needed import data and perform analysis to select a basket of stocks using Markowitz’s efficient frontier portfolio theory.</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>This module contains the following classes:</dt><dd><ul class="simple">
+<li><p>Example1</p></li>
+<li><p>Example2</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="sample-text">
+<h3>Sample text.<a class="headerlink" href="#sample-text" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="src.stock_selection.Stock">
+<em class="property">class </em><code class="sig-prename descclassname">src.stock_selection.</code><code class="sig-name descname">Stock</code><span class="sig-paren">(</span><em class="sig-param">ticker</em>, <em class="sig-param">price</em><span class="sig-paren">)</span><a class="headerlink" href="#src.stock_selection.Stock" title="Permalink to this definition">¶</a></dt>
+<dd><p>A single stock with the relevant price history. Contains internal message to calculate various statistics related to the stock.</p>
+<dl class="attribute">
+<dt id="src.stock_selection.Stock.ticker">
+<code class="sig-name descname">ticker</code><a class="headerlink" href="#src.stock_selection.Stock.ticker" title="Permalink to this definition">¶</a></dt>
+<dd><p>The ticker symbol of the stock as shown on relevant exchanges.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="src.stock_selection.Stock.sharpe_ratio">
+<code class="sig-name descname">sharpe_ratio</code><a class="headerlink" href="#src.stock_selection.Stock.sharpe_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds ratio of excess returns (Portfolio Return - Risk Free Rate) to portfolio standard deviation.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="src.stock_selection.Stock.sortino_ratio">
+<code class="sig-name descname">sortino_ratio</code><a class="headerlink" href="#src.stock_selection.Stock.sortino_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds ratio of excess returns (Portfolio Return - Risk Free Rate) to downside portfolio standard deviation</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">markowitz-portfolio</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Vinyou Tamprateep.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
