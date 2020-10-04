@@ -24,4 +24,18 @@ class PriceBuilder:
 
     def build(self):
         date_array = np.arange(start=self.start,stop=self.start + timedelta(days=self.size), step=timedelta(days=1))
-        price_array = list()
+        price_array = [self.average]
+
+        for _ in range(self.size - 1):
+            rand_num = self.rng.random()
+            change_factor = 2 * rand_num * self.volatility
+
+            if change_factor > self.volatility:
+                change_factor -= 2 * self.volatility
+
+            price_array.append(price_array[-1] + price_array[-1] * change_factor)
+
+        return pd.DataFrame({
+            'Date': date_array,
+            'Adj Close': price_array
+        })

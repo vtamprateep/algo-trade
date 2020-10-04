@@ -20,7 +20,6 @@ import numpy as np
 
 class Stock:
     '''
-
     A single stock with the relevant price history. Contains internal message to calculate various statistics related to the stock.
     
     ..  attribute:: ticker
@@ -34,7 +33,6 @@ class Stock:
     .. attribute:: sortino_ratio
 
         Holds ratio of excess returns (Portfolio Return - Risk Free Rate) to downside return portfolio standard deviation
-
     '''
 
     def __init__(self, ticker: str, price: pd.DataFrame, mar: float = None):
@@ -44,8 +42,8 @@ class Stock:
 
     def getSharpe(self):
         daily_returns = self.price_history['Adj Close'].pct_change().dropna()
-        std = daily_returns.iloc[0].std()
-        total_return = (self.price_history['Adj Close'][-1] - self.price_history['Adj Close'][0]) / self.price_history['Adj Close'][0]
+        std = daily_returns.std()
+        total_return = (self.price_history['Adj Close'].iloc[-1] - self.price_history['Adj Close'].iloc[0]) / self.price_history['Adj Close'].iloc[0]
         
         return total_return / std
 
@@ -55,12 +53,13 @@ class Stock:
         if not self.mar:
             self.mar = daily_returns.mean()
 
-        filtered_returns = daily_returns[daily_returns.iloc[0] < self.mar].dropna()
+        filtered_returns = daily_returns[daily_returns < self.mar].dropna()
+        square_difference = np.square(filtered_returns - self.mar)
+        downside_std = np.sqrt(square_difference.sum() / len(square_difference))
 
-        total_return = (self.price_history['Adj Close'][-1] - self.price_history['Adj Close'][0]) / self.price_history['Adj Close'][0]
-        std = filtered_returns.iloc[0].std()
+        total_return = (self.price_history['Adj Close'].iloc[-1] - self.price_history['Adj Close'].iloc[0]) / self.price_history['Adj Close'].iloc[0]
 
-        return total_return / std
+        return total_return / downside_std
 
 class DataBuilder:
     def __init__(self):
