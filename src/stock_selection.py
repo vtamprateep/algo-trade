@@ -13,7 +13,7 @@ Usage
 
 '''
 
-import yfinance
+import yfinance as yf
 import pandas as pd
 import numpy as np
 
@@ -29,7 +29,6 @@ class Stock:
     .. attribute:: price_history
 
         Holds Pandas dataframe containing daily, price data for a stock
-        
     '''
 
     def __init__(self, ticker: str, price: pd.DataFrame, mar: float = None):
@@ -65,14 +64,30 @@ class Stock:
 class DataBuilder:
     '''
     Builder class. Takes population of stock tickers and the Portfolio object, creates individual Stock objects directly within the portfolio class. Connects with yfinance API to pull pricing data.
+
+    ..  attribute:: ticker_list
+
+        List of tickers we want to collect into our portfolio for analysis
     '''
 
     def __init__(self):
-        self.spy_top_holdings = {'MSFT', 'AAPL', 'AMZN', 'FB', 'GOOG', 'JNJ', 'BRK.B', 'V', 'PG'}
-        self.spy_holdings = set()
+        self.ticker_list = ['MSFT', 'AAPL', 'AMZN', 'FB', 'GOOG', 'JNJ', 'BRK.B', 'V', 'PG']
 
-    def getStocks(self):
-        pass
+    def buildStocks(self, portfolio: Portfolio):
+        data = yf.download(
+            tickers = ' '.join(self.ticker_list),
+            period = '1y',
+            interval = '1d',
+            group_by = 'ticker',
+        )
+        
+        for ticker in self.ticker_list:
+            stock = Stock(
+                ticker = ticker,
+                price = data[ticker],
+            )
+            portfolio.addStock(stock)
+
 
 class Portfolio:
     '''
@@ -84,5 +99,19 @@ class Portfolio:
     def __init__(self):
         self.holdings = set()
 
-    def pickStocks(self):
-        pass
+    def addStock(self, stock: Stock):
+        self.holdings.add(stock)
+
+    def makePortfolio(self, method: str):
+        '''
+        ..  py:function:: makePortfolio(self, method)
+
+            Rank set of stocks by method indicated.
+
+        :param str method: Method to perform selection - Sharpe or Sortino
+        :param return: Pandas DataFrame
+        '''
+        if method.upper() == 'SORTINO':
+            pass
+        else:
+            pass
