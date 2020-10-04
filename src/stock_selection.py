@@ -26,19 +26,20 @@ class Stock:
 
         The ticker symbol of the stock as shown on relevant exchanges.
 
-    .. attribute:: sharpe_ratio
+    .. attribute:: price_history
 
-        Holds ratio of excess returns (Portfolio Return - Risk Free Rate) to portfolio excess return standard deviation.
-
-    .. attribute:: sortino_ratio
-
-        Holds ratio of excess returns (Portfolio Return - Risk Free Rate) to downside return portfolio standard deviation
+        Holds Pandas dataframe containing daily, price data for a stock
+        
     '''
 
     def __init__(self, ticker: str, price: pd.DataFrame, mar: float = None):
         self.ticker = ticker
         self.price_history = price.sort_index()
         self.mar = mar
+
+    def getVolatility(self):
+        daily_returns = self.price_history['Adj Close'].pct_change().dropna()
+        return daily_returns.std()
 
     def getSharpe(self):
         daily_returns = self.price_history['Adj Close'].pct_change().dropna()
@@ -62,17 +63,26 @@ class Stock:
         return total_return / downside_std
 
 class DataBuilder:
+    '''
+    Builder class. Takes population of stock tickers and the Portfolio object, creates individual Stock objects directly within the portfolio class. Connects with yfinance API to pull pricing data.
+    '''
+
     def __init__(self):
+        self.spy_top_holdings = {'MSFT', 'AAPL', 'AMZN', 'FB', 'GOOG', 'JNJ', 'BRK.B', 'V', 'PG'}
+        self.spy_holdings = set()
+
+    def getStocks(self):
         pass
 
-class MetricBuilder:
-    def __init__(self):
-        pass
+class Portfolio:
+    '''
+    Portfolio class, contains a collection of stock objects representing various securities and their daily, price data. Contains method to calculate portfolio level risk, return, and other metrics.
 
-class ModernPortfolio:
-    def __init__(self):
-        pass
+    ..  attribute:: 
+    '''
 
-class PostModernPortfolio:
     def __init__(self):
+        self.holdings = set()
+
+    def pickStocks(self):
         pass
