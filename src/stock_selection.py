@@ -13,9 +13,12 @@ Usage
 
 '''
 
+from datetime import datetime, timedelta
+
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import random
 
 
 class Stock:
@@ -35,19 +38,33 @@ class Stock:
         self.ticker = ticker
         self.price_history = price.sort_index()
         self.mar = mar
+        print(self.price_history.columns)
 
-    def getVolatility(self):
+        self.volatility = self.__getVolatility()
+        self.sharpe = self.__getSharpe()
+        self.sortino = self.__getSortino()
+
+    def __eq__(self, other):
+        return self.ticker == other.ticker
+
+    def __ne__(self, other):
+        return self.ticker != other.ticker
+
+    def __hash__(self):
+        return id(self.ticker)
+
+    def __getVolatility(self):
         daily_returns = self.price_history['Adj Close'].pct_change().dropna()
         return daily_returns.std()
 
-    def getSharpe(self):
+    def __getSharpe(self):
         daily_returns = self.price_history['Adj Close'].pct_change().dropna()
         std = daily_returns.std()
         total_return = (self.price_history['Adj Close'].iloc[-1] - self.price_history['Adj Close'].iloc[0]) / self.price_history['Adj Close'].iloc[0]
         
         return total_return / std
 
-    def getSortino(self):
+    def __getSortino(self):
         daily_returns = self.price_history['Adj Close'].pct_change().dropna()
 
         if not self.mar:
@@ -71,17 +88,42 @@ class DataBuilder:
     '''
 
     def __init__(self):
-        self.ticker_list = ['MSFT', 'AAPL', 'AMZN', 'FB', 'GOOG', 'JNJ', 'BRK.B', 'V', 'PG']
+        self.rng = random.Random()
 
-    def buildStocks(self, portfolio: Portfolio):
+    def buildFake(self, volatility: float, average: float, size: int, start: datetime = datetime(2000,1,1)):
+        self.volatility = volatility
+        self.average = average
+        self.size = size
+        self.start = start
+
+        date_array = np.arange(start=self.start,stop=self.start + timedelta(days=self.size), step=timedelta(days=1))
+        price_array = [self.average]
+
+        for _ in range(self.size - 1):
+            rand_num = self.rng.random()
+            change_factor = 2 * rand_num * self.volatility
+
+            if change_factor > self.volatility:
+                change_factor -= 2 * self.volatility
+
+            price_array.append(price_array[-1] + price_array[-1] * change_factor)
+
+        return pd.DataFrame(
+            data = {
+                'Adj Close': price_array
+            }, 
+            index = date_array,
+        )
+
+    def buildStocks(self, portfolio, stocks: list):
         data = yf.download(
-            tickers = ' '.join(self.ticker_list),
+            tickers = ' '.join(stocks),
             period = '1y',
             interval = '1d',
             group_by = 'ticker',
         )
         
-        for ticker in self.ticker_list:
+        for ticker in stocks:
             stock = Stock(
                 ticker = ticker,
                 price = data[ticker],
@@ -113,5 +155,8 @@ class Portfolio:
         '''
         if method.upper() == 'SORTINO':
             pass
-        else:
+        elif method.upper() == 'SHARPE':
             pass
+        else:
+            print('Invalid Method.')
+            return
