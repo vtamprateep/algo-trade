@@ -18,8 +18,9 @@ Usage
 This module uses the standard text runner, so it can be executed from the command line as follows:: python test_stock_selection.py
 '''
 
-from stock_selection import Stock, DataBuilder, Portfolio
+from stock_selection import Stock, DataBuilder, Portfolio, InvalidMetric
 from datetime import datetime, timedelta
+from pandas._testing import assert_frame_equal
 
 import unittest
 import pandas as pd
@@ -78,4 +79,48 @@ class TestStock(unittest.TestCase):
         self.assertEqual(round(self.stock_1.sortino, 5), 8.64454)
         self.assertEqual(round(self.stock_2.sortino, 5), 4.48422)
         self.assertIsInstance(self.stock_1.price_history.index, pd.DatetimeIndex)
+
+class TestPortfolio(unittest.TestCase):
+    def setUp(self):
+        self.portfolio = Portfolio()
+        self.builder1 = DataBuilder()
+        self.builder2 = DataBuilder()
+        self.builder1.rng.seed(1)
+        self.builder2.rng.seed(1)
+
+        self.dataset1 = self.builder1.buildFake(0.1, 10, 30)
+        self.dataset2 = self.builder2.buildFake(0.1, 20, 60)
+
+        self.stock_1 = Stock(
+            ticker='Test1',
+            price=self.dataset1,
+        )
+        self.stock_2 = Stock(
+            ticker='Test2',
+            price=self.dataset2,
+        )
+
+        self.portfolio.addStock(self.stock_1)
+        self.portfolio.addStock(self.stock_2)
+
+    def test_make_portfolio(self):
+        self.assertEqual(len(self.portfolio.holdings), 2)
         
+        assert_frame_equal(
+            self.portfolio.makePortfolio('sharpe'),
+            pd.DataFrame({
+                'ticker':['Test1', 'Test2'],
+                'sharpe_ratio':[8.00329, 4.38710],
+            })
+        )
+        
+        assert_frame_equal(
+            self.portfolio.makePortfolio('sortino'),
+            pd.DataFrame({
+                'ticker':['Test1', 'Test2'],
+                'sortino_ratio':[8.64454, 4.48422],
+            })
+        )
+
+        with self.assertRaises(InvalidMetric, msg='invalid method') as cm:
+            self.portfolio.makePortfolio('invalid method')

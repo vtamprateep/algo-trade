@@ -38,7 +38,6 @@ class Stock:
         self.ticker = ticker
         self.price_history = price.sort_index()
         self.mar = mar
-        print(self.price_history.columns)
 
         self.volatility = self.__getVolatility()
         self.sharpe = self.__getSharpe()
@@ -130,6 +129,8 @@ class DataBuilder:
             )
             portfolio.addStock(stock)
 
+class InvalidMetric(Exception):
+    pass
 
 class Portfolio:
     '''
@@ -153,10 +154,24 @@ class Portfolio:
         :param str method: Method to perform selection - Sharpe or Sortino
         :param return: Pandas DataFrame
         '''
+
         if method.upper() == 'SORTINO':
-            pass
+            temp_list = list()
+
+            for stock in self.holdings:
+                temp_list.append((stock.ticker, stock.sortino))
+
+            temp_df = pd.DataFrame(data = temp_list, columns=['ticker', 'sortino_ratio'])
+            return temp_df.sort_values('sortino_ratio', ascending=False)
+
         elif method.upper() == 'SHARPE':
-            pass
+            temp_list = list()
+            
+            for stock in self.holdings:
+                temp_list.append((stock.ticker, stock.sharpe))
+
+            temp_df = pd.DataFrame(data = temp_list, columns=['ticker', 'sharpe_ratio'])
+            return temp_df.sort_values('sharpe_ratio', ascending=False)
+
         else:
-            print('Invalid Method.')
-            return
+            raise InvalidMetric(method)
