@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import math
 import random
 
 
@@ -34,9 +35,10 @@ class Stock:
         Holds Pandas dataframe containing daily, price data for a stock
     '''
 
-    def __init__(self, ticker: str, price: pd.DataFrame, mar: float = None):
+    def __init__(self, ticker: str, price: pd.DataFrame, rf: float, mar: float = None):
         self.ticker = ticker
         self.price_history = price.sort_index()
+        self.rf = rf
         self.mar = mar
 
         self.volatility = self.__getVolatility()
@@ -57,25 +59,19 @@ class Stock:
         return daily_returns.std()
 
     def __getSharpe(self):
-        daily_returns = self.price_history['Adj Close'].pct_change().dropna()
-        std = daily_returns.std()
-        total_return = (self.price_history['Adj Close'].iloc[-1] - self.price_history['Adj Close'].iloc[0]) / self.price_history['Adj Close'].iloc[0]
-        
-        return total_return / std
+        daily_returns = self.price_history['Adj Close'].pct_change().dropna() - self.rf / 252
+        return daily_returns.mean() / self.volatility * math.sqrt(252)
 
     def __getSortino(self):
-        daily_returns = self.price_history['Adj Close'].pct_change().dropna()
+        daily_returns = self.price_history['Adj Close'].pct_change().dropna() - self.rf / 252
 
-        if not self.mar:
+        if self.mar == None:
             self.mar = daily_returns.mean()
 
-        filtered_returns = daily_returns[daily_returns < self.mar].dropna()
-        square_difference = np.square(filtered_returns - self.mar)
-        downside_std = np.sqrt(square_difference.sum() / len(square_difference))
+        filtered_returns = (daily_returns[daily_returns < self.mar] - self.mar) ** 2
+        downside_std = np.sqrt(filtered_returns.fillna(0).sum() / len(daily_returns))
 
-        total_return = (self.price_history['Adj Close'].iloc[-1] - self.price_history['Adj Close'].iloc[0]) / self.price_history['Adj Close'].iloc[0]
-
-        return total_return / downside_std
+        return daily_returns.mean() / downside_std * math.sqrt(252)
 
 class DataBuilder:
     '''
@@ -88,6 +84,7 @@ class DataBuilder:
 
     def __init__(self):
         self.rng = random.Random()
+        self.rf = yf.Ticker("SHY").info['yield']
 
     def buildFake(self, volatility: float, average: float, size: int, start: datetime = datetime(2000,1,1)):
         self.volatility = volatility
@@ -126,6 +123,7 @@ class DataBuilder:
             stock = Stock(
                 ticker = ticker,
                 price = data[ticker],
+                rf = self.rf
             )
             portfolio.addStock(stock)
 

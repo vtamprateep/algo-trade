@@ -58,14 +58,18 @@ class TestStock(unittest.TestCase):
         self.stock_1 = Stock(
             ticker='Test1',
             price=self.dataset1,
+            rf = 0.017,
         )
         self.stock_2 = Stock(
             ticker='Test2',
             price=self.dataset2,
+            rf = 0.017,
         )
         self.stock_3 = Stock(
             ticker='Test1',
             price=self.dataset2,
+            rf = 0.04,
+            mar=0,
         )
 
     def test_eq(self):
@@ -74,10 +78,12 @@ class TestStock(unittest.TestCase):
         self.assertEqual(len(set([self.stock_1, self.stock_3])), 1)
 
     def test_attributes(self):
-        self.assertEqual(round(self.stock_1.sharpe, 5), 8.00329)
-        self.assertEqual(round(self.stock_2.sharpe, 5), 4.38710)
-        self.assertEqual(round(self.stock_1.sortino, 5), 8.64454)
-        self.assertEqual(round(self.stock_2.sortino, 5), 4.48422)
+        self.assertEqual(round(self.stock_1.sharpe, 5), 4.05163)
+        self.assertEqual(round(self.stock_2.sharpe, 5), 1.47985)
+        self.assertEqual(round(self.stock_3.sharpe, 5), 1.45442)
+        self.assertEqual(round(self.stock_1.sortino, 5), 5.89172)
+        self.assertEqual(round(self.stock_2.sortino, 5), 2.12125)
+        self.assertEqual(round(self.stock_3.sortino, 5), 2.26207)
         self.assertIsInstance(self.stock_1.price_history.index, pd.DatetimeIndex)
 
 class TestPortfolio(unittest.TestCase):
@@ -94,10 +100,12 @@ class TestPortfolio(unittest.TestCase):
         self.stock_1 = Stock(
             ticker='Test1',
             price=self.dataset1,
+            rf=0.017,
         )
         self.stock_2 = Stock(
             ticker='Test2',
             price=self.dataset2,
+            rf=0.017,
         )
 
         self.portfolio.addStock(self.stock_1)
@@ -110,7 +118,7 @@ class TestPortfolio(unittest.TestCase):
             self.portfolio.makePortfolio('sharpe'),
             pd.DataFrame({
                 'ticker':['Test1', 'Test2'],
-                'sharpe_ratio':[8.00329, 4.38710],
+                'sharpe_ratio':[4.05163, 1.47985],
             })
         )
         
@@ -118,7 +126,7 @@ class TestPortfolio(unittest.TestCase):
             self.portfolio.makePortfolio('sortino'),
             pd.DataFrame({
                 'ticker':['Test1', 'Test2'],
-                'sortino_ratio':[8.64454, 4.48422],
+                'sortino_ratio':[5.89172, 2.12125],
             })
         )
 
