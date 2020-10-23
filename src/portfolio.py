@@ -1,5 +1,5 @@
 '''
-The stock_selection module includes modules needed import data and perform analysis to select a basket of stocks using Markowitz's efficient frontier portfolio theory.
+The portfolio module includes modules needed import data and perform analysis to select a basket of stocks using Markowitz's efficient frontier portfolio theory.
 
 Overview
 ========
@@ -43,7 +43,7 @@ class Stock:
 
         self.volatility = self.__getVolatility()
         self.sharpe = self.__getSharpe()
-        self.sortino = self.__getSortino()
+        # self.sortino = self.__getSortino()
 
     def __eq__(self, other):
         return self.ticker == other.ticker
@@ -62,6 +62,7 @@ class Stock:
         daily_returns = self.price_history['Adj Close'].pct_change().dropna() - self.rf / 252
         return daily_returns.mean() / self.volatility * math.sqrt(252)
 
+    # TODO: Check __getSortino method
     def __getSortino(self):
         daily_returns = self.price_history['Adj Close'].pct_change().dropna() - self.rf / 252
 
@@ -111,11 +112,11 @@ class DataBuilder:
             index = date_array,
         )
 
-    def buildStocks(self, portfolio, stocks: list):
+    def buildStocks(self, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
         data = yf.download(
             tickers = ' '.join(stocks),
-            period = '1y',
-            interval = '1d',
+            period = period,
+            interval = interval,
             group_by = 'ticker',
         )
         

@@ -18,7 +18,7 @@ Usage
 This module uses the standard text runner, so it can be executed from the command line as follows:: python test_stock_selection.py
 '''
 
-from stock_selection import Stock, DataBuilder, Portfolio, InvalidMetric
+from portfolio import Stock, DataBuilder, Portfolio, InvalidMetric
 from datetime import datetime, timedelta
 from pandas._testing import assert_frame_equal
 
