@@ -48,9 +48,15 @@ class OrderBuilder:
         pass
 
 
-@dataclass
 class Order:
-    ticker: str
-    quantity: int
-    action: str
-    order_type: str
+    def __init__(self, ticker: str, quantity: int, action: str, order_type: str):
+        self.__checkArgs(action=action.upper(), order_type=order_type.upper())
+
+        self.ticker = ticker.upper()
+        self.quantity = quantity
+        self.action = action.upper()
+        self.order_type = order_type.upper()
+
+    def __checkArgs(self, **kwargs):
+        assert kwargs['action'] in ('BUY', 'SELL'), 'Invalid order action.'
+        assert kwargs['order_type'] in ('MARKET', 'LIMIT'), 'Invalid order type.'
