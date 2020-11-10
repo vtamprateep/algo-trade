@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from tda.orders import equities
 
 import pandas as pd
 
@@ -7,10 +8,33 @@ class AccountClient:
     def __init__(self, client):
         self.client = client
 
-    def placeOrderTDAmeritrade(self, client, order_book):
+    def placeOrderTDAmeritrade(self, client, account_id, order_book):
         order_queue = list()
         for order in order_book:
-            pass
+            if order.action == 'SELL' and order.order_type == 'MARKET':
+                client.place_order(
+                    account_id,
+                    equities.equity_sell_market(order.ticker, order.quantity),
+                )
+            elif order.action == 'SELL' and order.order_type == 'LIMIT':
+                client.place_order(
+                    account_id,
+                    equities.equity_sell_limit(order.ticker, order.quantity, order.limit)
+                )
+            else:
+                order_queue.append(order)
+
+        for order in order_queue:
+            if order.action == 'BUY' and order.order_type == 'MARKET':
+                client.place_order(
+                    account_id,
+                    equities.equity_buy_market(order.ticker, order.quantity),
+                )
+            elif order.action == 'BUY' and order.order_type == 'LIMIT':
+                client.place_order(
+                    account_id,
+                    equities.equity_buy_limit(order.ticker, order.quantity, order.limit)
+                )
 
 class OrderBuilder:
     def __init__(self):

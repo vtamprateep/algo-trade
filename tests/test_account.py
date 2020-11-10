@@ -1,4 +1,4 @@
-from account import Order, OrderBuilder
+from account import Order, OrderBuilder, AccountClient
 
 import unittest
 import pandas as pd
@@ -88,4 +88,6 @@ class TestOrderBuilder(unittest.TestCase):
             },
         )
 
-        # Check limit order types
+class TestAccountClient(unittest.TestCase):
+    def setUp(self):
+        pass
