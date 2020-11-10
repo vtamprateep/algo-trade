@@ -12,17 +12,17 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-Portfolio Class
+Portfolio Module
 ===============
 
 .. automodule:: src.portfolio
 
-Strategy Class
+Strategy Module
 ==============
 
 .. automodule:: src.strategy
 
-Account Class
+Account Module
 =============
 
 .. automodule:: src.account
