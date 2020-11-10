@@ -1,4 +1,4 @@
-from account import Order, OrderBuilder
+from account import Order, OrderBuilder, AccountClient
 
 import unittest
 import pandas as pd
@@ -9,11 +9,17 @@ class TestOrder(unittest.TestCase):
     def test_order(self):
         order1 = Order('MSFT', 5, 'BUY', 'MARKET')
         order2 = Order('MSFT', 5, 'BUY', 'MARKET')
-        order3 = Order('GOOG', 5, 'BUY', 'MARKET')
+        order3 = Order('GOOG', 5, 'BUY', 'LIMIT', 500)
 
         self.assertEqual(order1, order2)
         self.assertNotEqual(order1, order3)
         self.assertNotEqual(order2, order3)
+
+        with self.assertRaises(AssertionError) as err:
+            order4 = Order('MSFT', 0, 'BUY', 'MARKET')
+            order5 = Order('MSFT', -5, 'SELL', 'MARKET')
+            order6 = Order('GOOG', 10, 'BUY', 'LIMIT')
+
         
 class TestOrderBuilder(unittest.TestCase):
     def setUp(self):
@@ -56,12 +62,12 @@ class TestOrderBuilder(unittest.TestCase):
 
         # Check error catching
         with self.assertRaises(AssertionError) as _:
-            self.order_builder.portfolioOrder(self.cur_port, self.err_port1)
-            self.order_builder.portfolioOrder(self.err_port2, self.cur_port)
+            self.order_builder.buildOrder(self.cur_port, self.err_port1)
+            self.order_builder.buildOrder(self.err_port2, self.cur_port)
         
         # Check order creation
         self.assertSetEqual(
-            self.order_builder.portfolioOrder(self.cur_port, self.fut_port1),
+            self.order_builder.buildOrder(self.cur_port, self.fut_port1),
             {
                 Order('Ticker1', 4, 'BUY', 'MARKET'),
                 Order('Ticker2', 2, 'BUY', 'MARKET'),
@@ -71,7 +77,7 @@ class TestOrderBuilder(unittest.TestCase):
         )
 
         self.assertSetEqual(
-            self.order_builder.portfolioOrder(self.cur_port, self.fut_port2),
+            self.order_builder.buildOrder(self.cur_port, self.fut_port2),
             {
                 Order('Ticker1', 1, 'SELL', 'MARKET'),
                 Order('Ticker2', 1, 'SELL', 'MARKET'),
@@ -81,3 +87,7 @@ class TestOrderBuilder(unittest.TestCase):
                 Order('Ticker6', 5, 'BUY', 'MARKET'),
             },
         )
+
+class TestAccountClient(unittest.TestCase):
+    def setUp(self):
+        pass
