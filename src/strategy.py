@@ -1,26 +1,24 @@
 '''
 The strategy module includes various portfolio strategies instantiated into classes.
 
-Overview
-========
-
 This module contains the following classes:
-    - Example1
-    - Example2
+    - Fortune50Strategy
 
-Usage
-=====
+Fortune50Strategy
+-----------------
+
+..  autoclass:: Fortune50Strategy
+    :members:
 
 '''
 
-import portfolio
+#import portfolio
 import pandas as pd
 
 
 class Fortune50Strategy:
     '''
-    Applies modern portfolio theory on population of Fortune 50 stocks, selecting top 20 with highest Sharpe ratio and allocating accordingly
-
+    Applies modern portfolio theory on population of Fortune 50 stocks, selecting top 20 with highest Sharpe ratio and allocating accordingly.
     '''
 
     def __init__(self):

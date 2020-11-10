@@ -30,49 +30,8 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="module-src.stock_selection">
-<span id="welcome-to-markowitz-portfolio-s-documentation"></span><h1>Welcome to markowitz-portfolio’s documentation!<a class="headerlink" href="#module-src.stock_selection" title="Permalink to this headline">¶</a></h1>
-<p>The stock_selection module includes modules needed import data and perform analysis to select a basket of stocks using Markowitz’s efficient frontier portfolio theory.</p>
-<div class="section" id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
-<dl class="simple">
-<dt>This module contains the following classes:</dt><dd><ul class="simple">
-<li><p>Example1</p></li>
-<li><p>Example2</p></li>
-</ul>
-</dd>
-</dl>
-</div>
-<div class="section" id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="sample-text">
-<h3>Sample text.<a class="headerlink" href="#sample-text" title="Permalink to this headline">¶</a></h3>
-<dl class="class">
-<dt id="src.stock_selection.Stock">
-<em class="property">class </em><code class="sig-prename descclassname">src.stock_selection.</code><code class="sig-name descname">Stock</code><span class="sig-paren">(</span><em class="sig-param">ticker</em>, <em class="sig-param">price</em><span class="sig-paren">)</span><a class="headerlink" href="#src.stock_selection.Stock" title="Permalink to this definition">¶</a></dt>
-<dd><p>A single stock with the relevant price history. Contains internal message to calculate various statistics related to the stock.</p>
-<dl class="attribute">
-<dt id="src.stock_selection.Stock.ticker">
-<code class="sig-name descname">ticker</code><a class="headerlink" href="#src.stock_selection.Stock.ticker" title="Permalink to this definition">¶</a></dt>
-<dd><p>The ticker symbol of the stock as shown on relevant exchanges.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="src.stock_selection.Stock.sharpe_ratio">
-<code class="sig-name descname">sharpe_ratio</code><a class="headerlink" href="#src.stock_selection.Stock.sharpe_ratio" title="Permalink to this definition">¶</a></dt>
-<dd><p>Holds ratio of excess returns (Portfolio Return - Risk Free Rate) to portfolio standard deviation.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="src.stock_selection.Stock.sortino_ratio">
-<code class="sig-name descname">sortino_ratio</code><a class="headerlink" href="#src.stock_selection.Stock.sortino_ratio" title="Permalink to this definition">¶</a></dt>
-<dd><p>Holds ratio of excess returns (Portfolio Return - Risk Free Rate) to downside portfolio standard deviation</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-</div>
+  <div class="section" id="welcome-to-markowitz-portfolio-s-documentation">
+<h1>Welcome to markowitz-portfolio’s documentation!<a class="headerlink" href="#welcome-to-markowitz-portfolio-s-documentation" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
 </div>
@@ -83,6 +42,108 @@
 <li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
+</div>
+<div class="section" id="module-src.portfolio">
+<span id="portfolio-class"></span><h1>Portfolio Class<a class="headerlink" href="#module-src.portfolio" title="Permalink to this headline">¶</a></h1>
+<p>The portfolio module includes modules needed import data and perform analysis to select a basket of stocks using Markowitz’s efficient frontier portfolio theory.</p>
+<dl class="simple">
+<dt>This module contains the following classes:</dt><dd><ul class="simple">
+<li><p>Stock</p></li>
+<li><p>Portfolio</p></li>
+<li><p>DataBuilder</p></li>
+</ul>
+</dd>
+</dl>
+<div class="section" id="stock">
+<h2>Stock<a class="headerlink" href="#stock" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="src.portfolio.Stock">
+<em class="property">class </em><code class="sig-prename descclassname">src.portfolio.</code><code class="sig-name descname">Stock</code><span class="sig-paren">(</span><em class="sig-param">ticker: str</em>, <em class="sig-param">price: pandas.core.frame.DataFrame</em>, <em class="sig-param">rf: float</em>, <em class="sig-param">mar: float = None</em><span class="sig-paren">)</span><a class="headerlink" href="#src.portfolio.Stock" title="Permalink to this definition">¶</a></dt>
+<dd><p>A single stock with the relevant price history. Contains internal message to calculate various statistics related to the stock.</p>
+<dl class="attribute">
+<dt id="src.portfolio.Stock.ticker">
+<code class="sig-name descname">ticker</code><a class="headerlink" href="#src.portfolio.Stock.ticker" title="Permalink to this definition">¶</a></dt>
+<dd><p>The ticker symbol of the stock as shown on relevant exchanges.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="src.portfolio.Stock.price_history">
+<code class="sig-name descname">price_history</code><a class="headerlink" href="#src.portfolio.Stock.price_history" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds Pandas dataframe containing daily, price data for a stock</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="portfolio">
+<h2>Portfolio<a class="headerlink" href="#portfolio" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="src.portfolio.Portfolio">
+<em class="property">class </em><code class="sig-prename descclassname">src.portfolio.</code><code class="sig-name descname">Portfolio</code><a class="headerlink" href="#src.portfolio.Portfolio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Portfolio class, contains a collection of stock objects representing various securities and their daily, price data. Contains method to calculate portfolio level risk, return, and other metrics.</p>
+<dl class="method">
+<dt id="src.portfolio.Portfolio.makePortfolio">
+<code class="sig-name descname">makePortfolio</code><span class="sig-paren">(</span><em class="sig-param">method: str</em><span class="sig-paren">)</span><a class="headerlink" href="#src.portfolio.Portfolio.makePortfolio" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rank set of stocks by method indicated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<em>str</em>) – Method to perform selection - Sharpe or Sortino</p></li>
+<li><p><strong>return</strong> – Pandas DataFrame</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="databuilder">
+<h2>DataBuilder<a class="headerlink" href="#databuilder" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="src.portfolio.DataBuilder">
+<em class="property">class </em><code class="sig-prename descclassname">src.portfolio.</code><code class="sig-name descname">DataBuilder</code><a class="headerlink" href="#src.portfolio.DataBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builder class. Takes population of stock tickers and the Portfolio object, creates individual Stock objects directly within the portfolio class. Connects with yfinance API to pull pricing data.</p>
+<dl class="attribute">
+<dt id="src.portfolio.DataBuilder.ticker_list">
+<code class="sig-name descname">ticker_list</code><a class="headerlink" href="#src.portfolio.DataBuilder.ticker_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of tickers we want to collect into our portfolio for analysis</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="module-src.strategy">
+<span id="strategy-class"></span><h1>Strategy Class<a class="headerlink" href="#module-src.strategy" title="Permalink to this headline">¶</a></h1>
+<p>The strategy module includes various portfolio strategies instantiated into classes.</p>
+<dl class="simple">
+<dt>This module contains the following classes:</dt><dd><ul class="simple">
+<li><p>Fortune50Strategy</p></li>
+</ul>
+</dd>
+</dl>
+<div class="section" id="fortune50strategy">
+<h2>Fortune50Strategy<a class="headerlink" href="#fortune50strategy" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="src.strategy.Fortune50Strategy">
+<em class="property">class </em><code class="sig-prename descclassname">src.strategy.</code><code class="sig-name descname">Fortune50Strategy</code><a class="headerlink" href="#src.strategy.Fortune50Strategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies modern portfolio theory on population of Fortune 50 stocks, selecting top 20 with highest Sharpe ratio and allocating accordingly.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="module-src.account">
+<span id="account-class"></span><h1>Account Class<a class="headerlink" href="#module-src.account" title="Permalink to this headline">¶</a></h1>
+<p>The account module contains classes and packages to handle order creation and submission to brokers via API.</p>
+<dl class="simple">
+<dt>This module contains the following classes:</dt><dd><ul class="simple">
+<li><p>AccountClient</p></li>
+<li><p>OrderBuilder</p></li>
+<li><p>Order</p></li>
+</ul>
+</dd>
+</dl>
 </div>
 
 
