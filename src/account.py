@@ -1,3 +1,12 @@
+'''
+The account module contains classes and packages to handle order creation and submission to brokers via API.
+
+This module contains the following classes:
+    - AccountClient
+    - OrderBuilder
+    - Order
+'''
+
 from dataclasses import dataclass
 from tda.orders import equities
 

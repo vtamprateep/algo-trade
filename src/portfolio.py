@@ -1,15 +1,28 @@
 '''
 The portfolio module includes modules needed import data and perform analysis to select a basket of stocks using Markowitz's efficient frontier portfolio theory.
 
-Overview
-========
-
 This module contains the following classes:
-    - Example1
-    - Example2
+    - Stock
+    - Portfolio
+    - DataBuilder
 
-Usage
-=====
+Stock
+-----
+
+..  autoclass:: Stock
+    :members:
+
+Portfolio
+---------
+
+..  autoclass:: Portfolio
+    :members:
+
+DataBuilder
+-----------
+
+..  autoclass:: DataBuilder
+    :members:
 
 '''
 
@@ -22,6 +35,9 @@ import math
 import random
 
 
+class InvalidMetric(Exception):
+    pass
+
 class Stock:
     '''
     A single stock with the relevant price history. Contains internal message to calculate various statistics related to the stock.
@@ -30,7 +46,7 @@ class Stock:
 
         The ticker symbol of the stock as shown on relevant exchanges.
 
-    .. attribute:: price_history
+    ..  attribute:: price_history
 
         Holds Pandas dataframe containing daily, price data for a stock
     '''
@@ -73,6 +89,46 @@ class Stock:
         downside_std = np.sqrt(filtered_returns.fillna(0).sum() / len(daily_returns))
 
         return daily_returns.mean() / downside_std * math.sqrt(252)
+
+class Portfolio:
+    '''
+    Portfolio class, contains a collection of stock objects representing various securities and their daily, price data. Contains method to calculate portfolio level risk, return, and other metrics.
+    '''
+
+    def __init__(self):
+        self.holdings = set()
+
+    def addStock(self, stock: Stock):
+        self.holdings.add(stock)
+
+    def makePortfolio(self, method: str):
+        '''
+        Rank set of stocks by method indicated.
+
+        :param str method: Method to perform selection - Sharpe or Sortino
+        :param return: Pandas DataFrame
+        '''
+
+        if method.upper() == 'SORTINO':
+            temp_list = list()
+
+            for stock in self.holdings:
+                temp_list.append((stock.ticker, stock.sortino))
+
+            temp_df = pd.DataFrame(data = temp_list, columns=['ticker', 'sortino_ratio'])
+            return temp_df.sort_values('sortino_ratio', ascending=False)
+
+        elif method.upper() == 'SHARPE':
+            temp_list = list()
+            
+            for stock in self.holdings:
+                temp_list.append((stock.ticker, stock.sharpe))
+
+            temp_df = pd.DataFrame(data = temp_list, columns=['ticker', 'sharpe_ratio'])
+            return temp_df.sort_values('sharpe_ratio', ascending=False)
+
+        else:
+            raise InvalidMetric(method)
 
 class DataBuilder:
     '''
@@ -127,50 +183,3 @@ class DataBuilder:
                 rf = self.rf
             )
             portfolio.addStock(stock)
-
-class InvalidMetric(Exception):
-    pass
-
-class Portfolio:
-    '''
-    Portfolio class, contains a collection of stock objects representing various securities and their daily, price data. Contains method to calculate portfolio level risk, return, and other metrics.
-
-    ..  attribute:: 
-    '''
-
-    def __init__(self):
-        self.holdings = set()
-
-    def addStock(self, stock: Stock):
-        self.holdings.add(stock)
-
-    def makePortfolio(self, method: str):
-        '''
-        ..  py:function:: makePortfolio(self, method)
-
-            Rank set of stocks by method indicated.
-
-        :param str method: Method to perform selection - Sharpe or Sortino
-        :param return: Pandas DataFrame
-        '''
-
-        if method.upper() == 'SORTINO':
-            temp_list = list()
-
-            for stock in self.holdings:
-                temp_list.append((stock.ticker, stock.sortino))
-
-            temp_df = pd.DataFrame(data = temp_list, columns=['ticker', 'sortino_ratio'])
-            return temp_df.sort_values('sortino_ratio', ascending=False)
-
-        elif method.upper() == 'SHARPE':
-            temp_list = list()
-            
-            for stock in self.holdings:
-                temp_list.append((stock.ticker, stock.sharpe))
-
-            temp_df = pd.DataFrame(data = temp_list, columns=['ticker', 'sharpe_ratio'])
-            return temp_df.sort_values('sharpe_ratio', ascending=False)
-
-        else:
-            raise InvalidMetric(method)
