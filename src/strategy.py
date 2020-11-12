@@ -12,8 +12,13 @@ Fortune50Strategy
 
 '''
 
-#import portfolio
+import portfolio
 import pandas as pd
+
+
+class BaseStrategy:
+    def __init__(self):
+        pass
 
 
 class Fortune50Strategy:

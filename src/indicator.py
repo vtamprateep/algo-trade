@@ -30,11 +30,13 @@ class Indicator:
         - Needs to be able to work on DataFrames with multiple columns
     '''
 
-    def getVolatility(self, data):
-        pass
+    def getVolatility(self, data: pd.DataFrame):
+        daily_returns = data.pct_change().dropna()
+        return daily_returns.std()
     
-    def getSharpe(self):
-        pass
+    def getSharpe(self, data: pd.DataFrame, rf: float):
+        daily_returns = data.pct_change().dropna() - rf / 252
+        return daily_returns.mean() / daily_returns.std() * math.sqrt(252)
 
     def getSortino(self):
         pass

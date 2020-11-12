@@ -26,3 +26,8 @@ Account Module
 =============
 
 .. automodule:: src.account
+
+Indicator Module
+================
+
+.. automodule:: src.indicator
