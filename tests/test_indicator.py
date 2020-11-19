@@ -12,7 +12,7 @@ class TestIndicator(unittest.TestCase):
         self.dataset = self.builder.buildFake(0.1, 20, 60)
 
     def test_get_volatility(self):
-        self.assertEqual(round(self.indicator.getVolatility(self.dataset), 5), 0.05696)
+        self.assertEqual(round(self.indicator.calcVolatility(self.dataset)['Adj Close'], 5), 0.05696)
 
     def test_get_sharpe(self):
-        self.assertEqual(round(self.indicator.getSharpe(self.dataset, 0.017), 5), 1.47985)
+        self.assertEqual(round(self.indicator.calcSharpe(self.dataset, 0.017)['Adj Close'], 5), 1.47985)

@@ -67,20 +67,25 @@ class Stock:
 
 class Portfolio:
     '''
-    Portfolio class, contains a collection of stock objects representing various securities and their daily, price data. Contains method to calculate portfolio level risk, return, and other metrics.
+    Portfolio class, contains a collection of stock objects representing various securities and their price data at different resolutions.
     '''
 
     def __init__(self):
         self.holdings = set()
+        self.strategy = None
 
-    def addStock(self, stock: Stock):
-        self.holdings.add(stock)
+    def __setUp(self):
+        pass
+
+    # Loaded data should be properly labeled with the relevant ticker name
+    def __getData(self):
+        pass
 
     def addStrategy(self, strategy):
         self.strategy = strategy
 
     # Run strategy and create optimal holdings to pass to orderbuilder
-    def runStrategy(self):
+    def run(self):
         pass
 
 class DataBuilder:
