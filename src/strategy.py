@@ -11,7 +11,15 @@ Fortune50Strategy
 ..  autoclass:: Fortune50Strategy
     :members:
 
+SpyIwoStrategy
+--------------
+
+..  autoclass:: SpyIwoStrategy
+    :members:
+
 '''
+
+# Maybe strategies should be an extention of the portfolio class rather than a separate entity?
 
 from dataclasses import dataclass
 from collections.abc import Callable, Iterable
@@ -27,6 +35,7 @@ class BaseStrategy:
     resolution: str = None
     min_period: int = None
     indicator: dict = dict()
+    dca: bool = False
 
     def addIndicator(self, indicator: Callable):
         if indicator.__name__ not in self.indicator:
@@ -39,8 +48,10 @@ class SpyIwoStrategy(BaseStrategy):
 
     def __init__(self):
         self.population = ['SPY', 'IWO']
+        self.dca = True
 
-    def compute(self, cash: float):
+    # TODO: Alter Portfolio to siphon cash balance to cash only strategies
+    def compute(self):
         return pd.DataFrame(
             data={
                 'ticker':['SPY', 'IWO'],
@@ -55,7 +66,7 @@ class Fortune50Strategy(BaseStrategy):
 
     def __init__(self):
         self.population = ['AAPL','MSFT','AMZN','FB','GOOGL','GOOG','BRK-B','JNJ','PG','NVDA','V','HD','UNH','JPM','MA','ADBE','PYPL','VZ','CRM','NFLX','INTC','DIS','PFE','CMCSA','WMT','MRK','KO','PEP','ABT','T','BAC','TMO','MCD','COST','CSCO','NKE','AVGO','ABBV','NEE','MDT','ACN','QCOM','DHR','XOM','UNP','TXN','CVX','BMY','AMGN','LOW']
-        self.rf = yf.Ticker("SHY").info['yield']
+        self.rf = ['SHY']
         self.resolution = 'year'
         self.min_period = 1
 

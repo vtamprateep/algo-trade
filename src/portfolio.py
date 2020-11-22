@@ -28,6 +28,7 @@ DataBuilder
 
 from datetime import datetime, timedelta
 from dataclasses import dataclass
+from collections.abc import Callable, Iterable
 
 import yfinance as yf
 import pandas as pd
@@ -65,29 +66,6 @@ class Stock:
     def __hash__(self):
         return id(self.ticker)
 
-class Portfolio:
-    '''
-    Portfolio class, contains a collection of stock objects representing various securities and their price data at different resolutions.
-    '''
-
-    def __init__(self):
-        self.holdings = set()
-        self.strategy = None
-
-    def __setUp(self):
-        pass
-
-    # Loaded data should be properly labeled with the relevant ticker name
-    def __getData(self):
-        pass
-
-    def addStrategy(self, strategy):
-        self.strategy = strategy
-
-    # Run strategy and create optimal holdings to pass to orderbuilder
-    def run(self):
-        pass
-
 class DataBuilder:
     '''
     Builder class. Takes population of stock tickers and the Portfolio object, creates individual Stock objects directly within the portfolio class. Connects with yfinance API to pull pricing data.
@@ -97,9 +75,10 @@ class DataBuilder:
         List of tickers we want to collect into our portfolio for analysis
     '''
 
-    def __init__(self):
+    def __init__(self, client = None):
         self.rng = random.Random()
         self.rf = yf.Ticker("SHY").info['yield']
+        self.client = client
 
     def buildFake(self, volatility: float, average: float, size: int, start: datetime = datetime(2000,1,1)):
         self.volatility = volatility
@@ -126,7 +105,7 @@ class DataBuilder:
             index = date_array,
         )
 
-    def buildStocks(self, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
+    def buildYahooFinance(self, holdings, stocks: list, period: str = '1y', interval: str = '1d'):
         data = yf.download(
             tickers = ' '.join(stocks),
             period = period,
@@ -140,4 +119,43 @@ class DataBuilder:
                 price = data[ticker],
                 rf = self.rf
             )
-            portfolio.addStock(stock)
+            holdings.addStock(stock)
+
+    # Build TDA data builder later
+    def buildTDAmeritrade(self, client, holdings, stocks: list, period: str = '1y', interval: str = '1d'):
+        pass
+
+@dataclass
+class Portfolio:
+    '''
+    Portfolio class, contains a collection of stock objects representing various securities and their price data at different resolutions.
+    '''
+
+    holdings = set()
+    strategy = None
+    databuilder: DataBuilder = None
+    population: Iterable
+    rf: float = None
+    resolution: str = None
+    min_period: int = None
+    indicator: dict = dict()
+    dca: bool = False
+
+    def __setUp(self):
+        self.__getData()
+
+    # Loaded data should be properly labeled with the relevant ticker name
+    def __getData(self):
+        if self.databuilder:
+            self.databuilder.buildYahooFinance(
+                self.holdings, 
+                self.strategy.population,
+            )
+
+    def addStrategy(self, strategy):
+        self.strategy = strategy
+
+    # Run strategy and create optimal holdings to pass to orderbuilder
+    def run(self, test: bool = False):
+        self.__setUp()
+        return self.strategy.compute()
