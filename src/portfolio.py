@@ -131,7 +131,7 @@ class Portfolio:
     Portfolio class, contains a collection of stock objects representing various securities and their price data at different resolutions.
     '''
 
-    population: Iterable
+    population: Iterable =  None
     client = None
     databuilder = None
     holdings = set()
