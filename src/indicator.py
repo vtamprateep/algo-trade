@@ -21,6 +21,16 @@ import numpy as np
 import math
 import random
 
+def volatility(data: pd.DataFrame):
+    daily_returns = data.pct_change().dropna()
+    return daily_returns.std()
+
+def sharpe(data: pd.DataFrame, rf: float):
+    daily_returns = data.pct_change().dropna() - rf / 252
+    return daily_returns.mean() / daily_returns.std() * math.sqrt(252)
+
+def sortino(data: pd.DataFrame, rf: float):
+    pass
 
 class Indicator:
     '''
@@ -30,11 +40,13 @@ class Indicator:
         - Needs to be able to work on DataFrames with multiple columns
     '''
 
-    def getVolatility(self, data):
-        pass
+    def calcVolatility(self, data: pd.DataFrame):
+        daily_returns = data.pct_change().dropna()
+        return daily_returns.std()
     
-    def getSharpe(self):
-        pass
+    def calcSharpe(self, data: pd.DataFrame, rf: float):
+        daily_returns = data.pct_change().dropna() - rf / 252
+        return daily_returns.mean() / daily_returns.std() * math.sqrt(252)
 
     def getSortino(self):
         pass

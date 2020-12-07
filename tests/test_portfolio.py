@@ -42,7 +42,7 @@ class TestDataBuilder(unittest.TestCase):
         self.assertEqual(self.dataset2.shape, (60, 1))
 
     def test_build_stocks(self):
-        self.builder1.buildStocks(self.portfolio, ['MSFT', 'AAPL', 'AMZN', 'FB', 'GOOG', 'JNJ', 'V', 'PG'])
+        self.builder1.buildYahooFinance(self.portfolio, ['MSFT', 'AAPL', 'AMZN', 'FB', 'GOOG', 'JNJ', 'V', 'PG'])
         self.assertEqual(len(self.portfolio.holdings), 8)
 
 class TestStock(unittest.TestCase):

@@ -27,6 +27,8 @@ DataBuilder
 '''
 
 from datetime import datetime, timedelta
+from dataclasses import dataclass
+from collections.abc import Callable, Iterable
 
 import yfinance as yf
 import pandas as pd
@@ -38,6 +40,7 @@ import random
 class InvalidMetric(Exception):
     pass
 
+@dataclass
 class Stock:
     '''
     A single stock with the relevant price history. Contains internal message to calculate various statistics related to the stock.
@@ -51,15 +54,8 @@ class Stock:
         Holds Pandas dataframe containing daily, price data for a stock
     '''
 
-    def __init__(self, ticker: str, price: pd.DataFrame, rf: float, mar: float = None):
-        self.ticker = ticker
-        self.price_history = price.sort_index()
-        self.rf = rf
-        self.mar = mar
-
-        self.volatility = self.__getVolatility()
-        self.sharpe = self.__getSharpe()
-        # self.sortino = self.__getSortino()
+    ticker: str
+    price_history: pd.DataFrame
 
     def __eq__(self, other):
         return self.ticker == other.ticker
@@ -70,66 +66,7 @@ class Stock:
     def __hash__(self):
         return id(self.ticker)
 
-    def __getVolatility(self):
-        daily_returns = self.price_history['Adj Close'].pct_change().dropna()
-        return daily_returns.std()
-
-    def __getSharpe(self):
-        daily_returns = self.price_history['Adj Close'].pct_change().dropna() - self.rf / 252
-        return daily_returns.mean() / self.volatility * math.sqrt(252)
-
-    # TODO: Check __getSortino method
-    def __getSortino(self):
-        daily_returns = self.price_history['Adj Close'].pct_change().dropna() - self.rf / 252
-
-        if self.mar == None:
-            self.mar = daily_returns.mean()
-
-        filtered_returns = (daily_returns[daily_returns < self.mar] - self.mar) ** 2
-        downside_std = np.sqrt(filtered_returns.fillna(0).sum() / len(daily_returns))
-
-        return daily_returns.mean() / downside_std * math.sqrt(252)
-
-class Portfolio:
-    '''
-    Portfolio class, contains a collection of stock objects representing various securities and their daily, price data. Contains method to calculate portfolio level risk, return, and other metrics.
-    '''
-
-    def __init__(self):
-        self.holdings = set()
-
-    def addStock(self, stock: Stock):
-        self.holdings.add(stock)
-
-    def makePortfolio(self, method: str):
-        '''
-        Rank set of stocks by method indicated.
-
-        :param str method: Method to perform selection - Sharpe or Sortino
-        :param return: Pandas DataFrame
-        '''
-
-        if method.upper() == 'SORTINO':
-            temp_list = list()
-
-            for stock in self.holdings:
-                temp_list.append((stock.ticker, stock.sortino))
-
-            temp_df = pd.DataFrame(data = temp_list, columns=['ticker', 'sortino_ratio'])
-            return temp_df.sort_values('sortino_ratio', ascending=False)
-
-        elif method.upper() == 'SHARPE':
-            temp_list = list()
-            
-            for stock in self.holdings:
-                temp_list.append((stock.ticker, stock.sharpe))
-
-            temp_df = pd.DataFrame(data = temp_list, columns=['ticker', 'sharpe_ratio'])
-            return temp_df.sort_values('sharpe_ratio', ascending=False)
-
-        else:
-            raise InvalidMetric(method)
-
+@dataclass
 class DataBuilder:
     '''
     Builder class. Takes population of stock tickers and the Portfolio object, creates individual Stock objects directly within the portfolio class. Connects with yfinance API to pull pricing data.
@@ -139,9 +76,9 @@ class DataBuilder:
         List of tickers we want to collect into our portfolio for analysis
     '''
 
-    def __init__(self):
-        self.rng = random.Random()
-        self.rf = yf.Ticker("SHY").info['yield']
+    rng: Iterable = random.Random()
+    rf: float = yf.Ticker("SHY").info['yield']
+    client = None
 
     def buildFake(self, volatility: float, average: float, size: int, start: datetime = datetime(2000,1,1)):
         self.volatility = volatility
@@ -168,7 +105,7 @@ class DataBuilder:
             index = date_array,
         )
 
-    def buildStocks(self, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
+    def YahooFinance(self, holdings, stocks: list, period: str = '1y', interval: str = '1d'):
         data = yf.download(
             tickers = ' '.join(stocks),
             period = period,
@@ -182,4 +119,45 @@ class DataBuilder:
                 price = data[ticker],
                 rf = self.rf
             )
-            portfolio.addStock(stock)
+            holdings.addStock(stock)
+
+    # Build TDA data builder later
+    def TDAmeritrade(self, client, holdings, stocks: list, period: str = '1y', interval: str = '1d'):
+        pass
+
+@dataclass
+class Portfolio:
+    '''
+    Portfolio class, contains a collection of stock objects representing various securities and their price data at different resolutions.
+    '''
+
+    population: Iterable =  None
+    client = None
+    databuilder = None
+    holdings = set()
+    rf: float = None
+    resolution: str = None
+    min_period: int = None
+    dca: bool = False
+
+    def __setUp(self):
+        self.__getData()
+
+    # Loaded data should be properly labeled with the relevant ticker name
+    def __getData(self):
+        if self.databuilder and self.client:
+            pass
+        elif self.databuilder:
+            self.databuilder(
+                self.holdings, 
+                self.population,
+            )
+
+    def strategy(self):
+        # Base class, override strategy when defining trading algorithms
+        pass
+
+    # Run strategy and create optimal holdings to pass to orderbuilder
+    def run(self, test: bool = False):
+        self.__setUp()
+        return self.strategy()
