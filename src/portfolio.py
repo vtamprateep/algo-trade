@@ -29,6 +29,7 @@ DataBuilder
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from collections.abc import Callable, Iterable
+from tda import client
 
 import yfinance as yf
 import pandas as pd
@@ -76,36 +77,11 @@ class DataBuilder:
         List of tickers we want to collect into our portfolio for analysis
     '''
 
-    rng: Iterable = random.Random()
+    # Use 1 year Treasury yield rate
     rf: float = yf.Ticker("SHY").info['yield']
     client = None
 
-    def buildFake(self, volatility: float, average: float, size: int, start: datetime = datetime(2000,1,1)):
-        self.volatility = volatility
-        self.average = average
-        self.size = size
-        self.start = start
-
-        date_array = np.arange(start=self.start,stop=self.start + timedelta(days=self.size), step=timedelta(days=1))
-        price_array = [self.average]
-
-        for _ in range(self.size - 1):
-            rand_num = self.rng.random()
-            change_factor = 2 * rand_num * self.volatility
-
-            if change_factor > self.volatility:
-                change_factor -= 2 * self.volatility
-
-            price_array.append(price_array[-1] + price_array[-1] * change_factor)
-
-        return pd.DataFrame(
-            data = {
-                'Adj Close': price_array
-            }, 
-            index = date_array,
-        )
-
-    def YahooFinance(self, holdings, stocks: list, period: str = '1y', interval: str = '1d'):
+    def YahooFinance(self, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
         data = yf.download(
             tickers = ' '.join(stocks),
             period = period,
@@ -117,13 +93,26 @@ class DataBuilder:
             stock = Stock(
                 ticker = ticker,
                 price = data[ticker],
-                rf = self.rf
+                rf = self.rf,
             )
-            holdings.addStock(stock)
+            portfolio.addStock(stock)
 
-    # Build TDA data builder later
-    def TDAmeritrade(self, client, holdings, stocks: list, period: str = '1y', interval: str = '1d'):
-        pass
+    def TDAmeritrade(self, client, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
+        for ticker in stocks:
+            price_history = client.get_price_history(
+                ticker,
+                period_type='year',
+                period=1,
+                frequency_type='daily',
+                frequeny=1,
+            )
+
+            stock = Stock(
+                ticker = ticker,
+                price = price_history,
+                rf = self.rf,
+            )
+            portfolio.addStock(stock)
 
 @dataclass
 class Portfolio:
@@ -140,18 +129,8 @@ class Portfolio:
     min_period: int = None
     dca: bool = False
 
-    def __setUp(self):
-        self.__getData()
-
-    # Loaded data should be properly labeled with the relevant ticker name
-    def __getData(self):
-        if self.databuilder and self.client:
-            pass
-        elif self.databuilder:
-            self.databuilder(
-                self.holdings, 
-                self.population,
-            )
+    def add_stock(self, stock: Stock):
+        self.holdings.add(stock)
 
     def strategy(self):
         # Base class, override strategy when defining trading algorithms
@@ -159,5 +138,4 @@ class Portfolio:
 
     # Run strategy and create optimal holdings to pass to orderbuilder
     def run(self, test: bool = False):
-        self.__setUp()
         return self.strategy()
