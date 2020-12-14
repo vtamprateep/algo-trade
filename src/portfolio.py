@@ -29,6 +29,7 @@ DataBuilder
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from collections.abc import Callable, Iterable
+from tda import client
 
 import yfinance as yf
 import pandas as pd
@@ -76,36 +77,11 @@ class DataBuilder:
         List of tickers we want to collect into our portfolio for analysis
     '''
 
-    rng: Iterable = random.Random()
+    # Use 1 year Treasury yield rate
     rf: float = yf.Ticker("SHY").info['yield']
     client = None
 
-    def buildFake(self, volatility: float, average: float, size: int, start: datetime = datetime(2000,1,1)):
-        self.volatility = volatility
-        self.average = average
-        self.size = size
-        self.start = start
-
-        date_array = np.arange(start=self.start,stop=self.start + timedelta(days=self.size), step=timedelta(days=1))
-        price_array = [self.average]
-
-        for _ in range(self.size - 1):
-            rand_num = self.rng.random()
-            change_factor = 2 * rand_num * self.volatility
-
-            if change_factor > self.volatility:
-                change_factor -= 2 * self.volatility
-
-            price_array.append(price_array[-1] + price_array[-1] * change_factor)
-
-        return pd.DataFrame(
-            data = {
-                'Adj Close': price_array
-            }, 
-            index = date_array,
-        )
-
-    def YahooFinance(self, holdings, stocks: list, period: str = '1y', interval: str = '1d'):
+    def YahooFinance(self, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
         data = yf.download(
             tickers = ' '.join(stocks),
             period = period,
@@ -117,13 +93,51 @@ class DataBuilder:
             stock = Stock(
                 ticker = ticker,
                 price = data[ticker],
-                rf = self.rf
+                rf = self.rf,
             )
-            holdings.addStock(stock)
+            portfolio.addStock(stock)
 
-    # Build TDA data builder later
-    def TDAmeritrade(self, client, holdings, stocks: list, period: str = '1y', interval: str = '1d'):
-        pass
+    def TDAmeritrade(self, client, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
+        '''
+        Output from TDA historicals in following format
+        {
+            'candles': List[{
+                'open': float,
+                'high': float,
+                'low': float,
+                'close': float,
+                'volume': int (units of millions),
+                'datetime': (units of miliseconds)
+            }],
+            'symbol': str,
+            'empty': bool,
+        }
+        '''
+        client.set_enforce_enums(enforce_enums=False)
+
+        for ticker in stocks:
+            response = client.get_price_history(
+                ticker,
+                period_type='year',
+                period=1,
+                frequency_type='daily',
+                frequeny=1,
+            ).json()
+
+            price_history = pd.DataFrame(
+                data=response['candles'],
+                columns=['datetime', 'open', 'high', 'low', 'close'],
+            )
+            price_history['datetime'] = pd.to_datetime(price_history['datetime'], unit='ms')
+
+            stock = Stock(
+                ticker = ticker,
+                price = price_history,
+                rf = self.rf,
+            )
+            portfolio.addStock(stock)
+
+        client.set_enforce_enums(enforce_enums=True)
 
 @dataclass
 class Portfolio:
@@ -140,18 +154,8 @@ class Portfolio:
     min_period: int = None
     dca: bool = False
 
-    def __setUp(self):
-        self.__getData()
-
-    # Loaded data should be properly labeled with the relevant ticker name
-    def __getData(self):
-        if self.databuilder and self.client:
-            pass
-        elif self.databuilder:
-            self.databuilder(
-                self.holdings, 
-                self.population,
-            )
+    def add_stock(self, stock: Stock):
+        self.holdings.add(stock)
 
     def strategy(self):
         # Base class, override strategy when defining trading algorithms
@@ -159,5 +163,56 @@ class Portfolio:
 
     # Run strategy and create optimal holdings to pass to orderbuilder
     def run(self, test: bool = False):
-        self.__setUp()
         return self.strategy()
+
+if __name__ == '__main__':
+
+    # Script to test TDA API price history return values
+    
+    from tda import client, auth
+    from selenium import webdriver
+    from dotenv import load_dotenv
+    import json
+    import os, pathlib
+
+
+    load_dotenv()
+
+    TD_KEY = os.getenv('CONSUMER_KEY')
+    ACC_NUMBER = os.getenv('ACC_NUMBER')
+    REDIRECT_URI = os.getenv('REDIRECT_URI')
+    API_KEY = TD_KEY + '@AMER.OAUTHAP'
+    TOKEN_PATH = os.path.join(
+        pathlib.Path(__file__).absolute().parent,
+        'temp_token/token.pickle',
+    )
+
+    #print(pathlib.Path(__file__).absolute().parent)
+
+    def get_webdriver():
+        return webdriver.Chrome('/usr/local/bin/chromedriver')
+
+    td_client = auth.easy_client(
+        api_key=API_KEY,
+        redirect_uri=REDIRECT_URI,
+        token_path=TOKEN_PATH,
+        webdriver_func=get_webdriver,
+        
+    )
+    # Disable enumerator for values
+    td_client.set_enforce_enums(enforce_enums=False)
+
+    spy_price = td_client.get_price_history(
+        symbol='SPY',
+        period_type='year',
+        period=1,
+        frequency_type='daily',
+        frequency=1,
+    ).json()
+    print(spy_price.keys())
+    
+    df_price = pd.DataFrame(
+        data=spy_price['candles'],
+        columns=['datetime', 'open', 'high', 'low', 'close'],
+    )
+    df_price['datetime'] = pd.to_datetime(df_price['datetime'], unit='ms')

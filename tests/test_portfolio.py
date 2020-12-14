@@ -34,13 +34,6 @@ class TestDataBuilder(unittest.TestCase):
         self.dataset1 = self.builder1.buildFake(0.1, 10, 30)
         self.dataset2 = self.builder2.buildFake(0.1, 20, 60)
 
-        self.portfolio = Portfolio()
-
-    def test_build_fake(self):
-        self.assertIsInstance(self.dataset1, pd.DataFrame)
-        self.assertEqual(self.dataset1.shape, (30, 1))
-        self.assertEqual(self.dataset2.shape, (60, 1))
-
     def test_build_stocks(self):
         self.builder1.buildYahooFinance(self.portfolio, ['MSFT', 'AAPL', 'AMZN', 'FB', 'GOOG', 'JNJ', 'V', 'PG'])
         self.assertEqual(len(self.portfolio.holdings), 8)
