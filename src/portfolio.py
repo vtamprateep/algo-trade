@@ -98,14 +98,37 @@ class DataBuilder:
             portfolio.addStock(stock)
 
     def TDAmeritrade(self, client, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
+        '''
+        Output from TDA historicals in following format
+        {
+            'candles': List[{
+                'open': float,
+                'high': float,
+                'low': float,
+                'close': float,
+                'volume': int (units of millions),
+                'datetime': (units of miliseconds)
+            }],
+            'symbol': str,
+            'empty': bool,
+        }
+        '''
+        client.set_enforce_enums(enforce_enums=False)
+
         for ticker in stocks:
-            price_history = client.get_price_history(
+            response = client.get_price_history(
                 ticker,
                 period_type='year',
                 period=1,
                 frequency_type='daily',
                 frequeny=1,
+            ).json()
+
+            price_history = pd.DataFrame(
+                data=response['candles'],
+                columns=['datetime', 'open', 'high', 'low', 'close'],
             )
+            price_history['datetime'] = pd.to_datetime(price_history['datetime'], unit='ms')
 
             stock = Stock(
                 ticker = ticker,
@@ -113,6 +136,8 @@ class DataBuilder:
                 rf = self.rf,
             )
             portfolio.addStock(stock)
+
+        client.set_enforce_enums(enforce_enums=True)
 
 @dataclass
 class Portfolio:
@@ -139,3 +164,55 @@ class Portfolio:
     # Run strategy and create optimal holdings to pass to orderbuilder
     def run(self, test: bool = False):
         return self.strategy()
+
+if __name__ == '__main__':
+
+    # Script to test TDA API price history return values
+    
+    from tda import client, auth
+    from selenium import webdriver
+    from dotenv import load_dotenv
+    import json
+    import os, pathlib
+
+
+    load_dotenv()
+
+    TD_KEY = os.getenv('CONSUMER_KEY')
+    ACC_NUMBER = os.getenv('ACC_NUMBER')
+    REDIRECT_URI = os.getenv('REDIRECT_URI')
+    API_KEY = TD_KEY + '@AMER.OAUTHAP'
+    TOKEN_PATH = os.path.join(
+        pathlib.Path(__file__).absolute().parent,
+        'temp_token/token.pickle',
+    )
+
+    #print(pathlib.Path(__file__).absolute().parent)
+
+    def get_webdriver():
+        return webdriver.Chrome('/usr/local/bin/chromedriver')
+
+    td_client = auth.easy_client(
+        api_key=API_KEY,
+        redirect_uri=REDIRECT_URI,
+        token_path=TOKEN_PATH,
+        webdriver_func=get_webdriver,
+        
+    )
+    # Disable enumerator for values
+    td_client.set_enforce_enums(enforce_enums=False)
+
+    spy_price = td_client.get_price_history(
+        symbol='SPY',
+        period_type='year',
+        period=1,
+        frequency_type='daily',
+        frequency=1,
+    ).json()
+    print(spy_price.keys())
+    
+    df_price = pd.DataFrame(
+        data=spy_price['candles'],
+        columns=['datetime', 'open', 'high', 'low', 'close'],
+    )
+    df_price['datetime'] = pd.to_datetime(df_price['datetime'], unit='ms')
