@@ -36,6 +36,7 @@ import pandas as pd
 import numpy as np
 import math
 import random
+import json
 
 
 class InvalidMetric(Exception):
@@ -92,8 +93,7 @@ class DataBuilder:
         for ticker in stocks:
             stock = Stock(
                 ticker = ticker,
-                price = data[ticker],
-                rf = self.rf,
+                price_history = data[ticker],
             )
             portfolio.addStock(stock)
 
