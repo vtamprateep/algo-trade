@@ -103,46 +103,44 @@ class TestDataBuilder(unittest.TestCase):
 class TestPortfolio(unittest.TestCase):
     def setUp(self):
         self.portfolio = Portfolio()
-        self.builder1 = DataBuilder()
-        self.builder2 = DataBuilder()
-        self.builder1.rng.seed(1)
-        self.builder2.rng.seed(1)
 
-        self.dataset1 = self.builder1.buildFake(0.1, 10, 30)
-        self.dataset2 = self.builder2.buildFake(0.1, 20, 60)
+        self.dataset1 = pd.DataFrame(
+            data={
+                'datetime': pd.date_range(start='1/1/2018', periods=5),
+                'open': [0,1,2,3,4],
+                'high': [0,1,2,3,4],
+                'low': [0,1,2,3,4],
+                'close': [0,1,2,3,4],
+            }
+        )
+
+        self.dataset2 = pd.DataFrame(
+            data={
+                'datetime': pd.date_range(start='1/1/2018', periods=5),
+                'open': [1,2,3,4,5],
+                'high': [1,2,3,4,5],
+                'low': [1,2,3,4,5],
+                'close': [1,2,3,4,5],
+            }
+        )
 
         self.stock_1 = Stock(
             ticker='Test1',
-            price=self.dataset1,
-            rf=0.017,
+            price_history=self.dataset1,
         )
         self.stock_2 = Stock(
             ticker='Test2',
-            price=self.dataset2,
-            rf=0.017,
+            price_history=self.dataset2,
+        )
+        self.stock_3 = Stock(
+            ticker='Test1',
+            price_history=self.dataset2,
         )
 
-        self.portfolio.addStock(self.stock_1)
-        self.portfolio.addStock(self.stock_2)
+    def test_portfolio(self):
+        for stock in [self.stock_1, self.stock_2, self.stock_3]:
+            self.portfolio.add_stock(stock)
 
-    def test_make_portfolio(self):
         self.assertEqual(len(self.portfolio.holdings), 2)
-        
-        assert_frame_equal(
-            self.portfolio.makePortfolio('sharpe'),
-            pd.DataFrame({
-                'ticker':['Test1', 'Test2'],
-                'sharpe_ratio':[4.05163, 1.47985],
-            })
-        )
-        
-        assert_frame_equal(
-            self.portfolio.makePortfolio('sortino'),
-            pd.DataFrame({
-                'ticker':['Test1', 'Test2'],
-                'sortino_ratio':[5.89172, 2.12125],
-            })
-        )
-
-        with self.assertRaises(InvalidMetric, msg='invalid method') as cm:
-            self.portfolio.makePortfolio('invalid method')
+        self.assertIn(self.stock_1, self.portfolio.holdings)
+        self.assertIn(self.stock_2, self.portfolio.holdings)
