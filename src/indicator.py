@@ -18,12 +18,24 @@ from datetime import datetime, timedelta
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import scipy
 import math
-import random
 
-def volatility(data: pd.DataFrame):
-    daily_returns = data.pct_change().dropna()
-    return daily_returns.std()
+
+def mean(data: pd.DataFrame, pct: bool = False):
+    if pct:
+        data = data.pct_change().dropna()
+    return data.mean()
+
+def geometric_mean(data: pd.DataFrame, pct: bool = False):
+    if pct:
+        data = data.pct_change().dropna()
+    return scipy.stats.gmean(data)
+
+def volatility(data: pd.DataFrame, pct: bool = False):
+    if pct:
+        data = data.pct_change().dropna()
+    return data.std()
 
 def sharpe(data: pd.DataFrame, rf: float):
     daily_returns = data.pct_change().dropna() - rf / 252

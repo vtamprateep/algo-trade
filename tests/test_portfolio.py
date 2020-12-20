@@ -32,22 +32,22 @@ class TestStock(unittest.TestCase):
     def setUp(self):
         self.dataset1 = pd.DataFrame(
             data={
-                'datetime': pd.date_range(start='1/1/2018', periods=5),
                 'open': [0,1,2,3,4],
                 'high': [0,1,2,3,4],
                 'low': [0,1,2,3,4],
                 'close': [0,1,2,3,4],
-            }
+            },
+            index = pd.date_range(start='1/1/2018', periods=5)
         )
 
         self.dataset2 = pd.DataFrame(
             data={
-                'datetime': pd.date_range(start='1/1/2018', periods=5),
                 'open': [1,2,3,4,5],
                 'high': [1,2,3,4,5],
                 'low': [1,2,3,4,5],
                 'close': [1,2,3,4,5],
-            }
+            },
+            index = pd.date_range(start='1/1/2018', periods=5)
         )
 
         self.stock_1 = Stock(

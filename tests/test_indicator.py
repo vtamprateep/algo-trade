@@ -1,18 +1,50 @@
-from indicator import Indicator
 from portfolio import DataBuilder
 
+import pandas as pd
+import numpy as np
 import unittest
+import indicator
 
 
 class TestIndicator(unittest.TestCase):
     def setUp(self):
-        self.indicator = Indicator()
-        self.builder = DataBuilder()
-        self.builder.rng.seed(1)
-        self.dataset = self.builder.buildFake(0.1, 20, 60)
+        self.df1 = pd.DataFrame(
+            data = [1]
+        )
 
-    def test_get_volatility(self):
-        self.assertEqual(round(self.indicator.calcVolatility(self.dataset)['Adj Close'], 5), 0.05696)
+        self.df2 = pd.DataFrame(
+            data = [1, 1, 1, 1, 1]
+        )
 
-    def test_get_sharpe(self):
-        self.assertEqual(round(self.indicator.calcSharpe(self.dataset, 0.017)['Adj Close'], 5), 1.47985)
+        self.df3 = pd.DataFrame(
+            data = [1, 2, 3, 4, 5]
+        )
+        self.df5 = pd.DataFrame(
+            data={
+                'open': [1,2,3,4,5],
+                'high': [1,2,3,4,5],
+                'low': [1,2,3,4,5],
+                'close': [1,2,3,4,5],
+            },
+            index = pd.date_range(start='1/1/2018', periods=5)
+        )
+
+    def test_volatility(self):
+        self.assertTrue(
+            pd.Series.equals(
+                indicator.volatility(self.df1),
+                pd.Series(data=np.nan),
+            )
+        )
+        self.assertTrue(
+            pd.Series.equals(
+                indicator.volatility(self.df2),
+                pd.Series(data=[0.0])
+            )
+        )
+        self.assertTrue(
+            pd.Series.equals(
+                indicator.volatility(self.df3).round(3),
+                pd.Series(data=[1.581])
+            )
+        )
