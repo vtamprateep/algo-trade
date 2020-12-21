@@ -14,53 +14,46 @@ The indicator class serves as a library of calculations, either by industry stan
 '''
 
 from datetime import datetime, timedelta
+from scipy import stats
 
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import scipy
 import math
 
 
-def mean(data: pd.DataFrame, pct: bool = False):
+def mean(data: pd.DataFrame, pct: bool = False, geo: bool = False):
     if pct:
         data = data.pct_change().dropna()
-    return data.mean()
 
-def geometric_mean(data: pd.DataFrame, pct: bool = False):
-    if pct:
-        data = data.pct_change().dropna()
-    return scipy.stats.gmean(data)
+    if geo:
+        g_mean = stats.mstats.gmean(data)
+        return pd.Series(data=g_mean, index=data.columns)
+    else:
+        return data.mean()
 
 def volatility(data: pd.DataFrame, pct: bool = False):
     if pct:
         data = data.pct_change().dropna()
     return data.std()
 
-def sharpe(data: pd.DataFrame, rf: float):
-    daily_returns = data.pct_change().dropna() - rf / 252
-    return daily_returns.mean() / daily_returns.std() * math.sqrt(252)
+def sharpe(data: pd.DataFrame, rf: float = 0, freq: str = 'year', geo = False):
+    freq_factor = {
+        'daily': 252,
+        'week': 52,
+        'month': 12,
+        'year': 1,
+    }
+
+    data = data.pct_change().dropna() - rf / freq_factor[freq]
+
+    if geo:
+        temp_arr = stats.mstats.gmean(data)
+        average = pd.Series(data=temp_arr, index = data.columns)
+    else:
+        average = data.mean()
+
+    return average / data.std() * math.sqrt(freq_factor[freq])
 
 def sortino(data: pd.DataFrame, rf: float):
     pass
-
-class Indicator:
-    '''
-    Feature requirements:
-        - Needs to be able to work on DataFrames and Lists
-        - Needs to be able to work on a list of lists
-        - Needs to be able to work on DataFrames with multiple columns
-    '''
-
-    def calcVolatility(self, data: pd.DataFrame):
-        daily_returns = data.pct_change().dropna()
-        return daily_returns.std()
-    
-    def calcSharpe(self, data: pd.DataFrame, rf: float):
-        daily_returns = data.pct_change().dropna() - rf / 252
-        return daily_returns.mean() / daily_returns.std() * math.sqrt(252)
-
-    def getSortino(self):
-        pass
-
-    
