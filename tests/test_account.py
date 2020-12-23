@@ -1,9 +1,17 @@
 from account import Order, OrderBuilder, AccountClient
+from unittest.mock import Mock
 
 import unittest
 import pandas as pd
 import numpy as np
 
+
+class TestAccountClient(unittest.TestCase):
+    def setUp(self):
+        self.client_mock = Mock()
+
+    def test_placeOrderTDAmeritrade(self):
+        pass
 
 class TestOrder(unittest.TestCase):
     def test_order(self):
@@ -87,7 +95,3 @@ class TestOrderBuilder(unittest.TestCase):
                 Order('Ticker6', 5, 'BUY', 'MARKET'),
             },
         )
-
-class TestAccountClient(unittest.TestCase):
-    def setUp(self):
-        pass
