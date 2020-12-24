@@ -27,17 +27,46 @@ class AccountClient:
     def getPosition(self):
         response = self.client.get_account(self.ACC_ID, fields=['positions']).json()
         positions = response['securitiesAccount']['positions']
-        return_dict = {'ticker': list(), 'value': list()}
+        position_dict = {
+            'ticker': list(),
+            'value': list()
+        }
 
         for instr in positions:
-            return_dict['ticker'].append(instr['instrument']['symbol'])
-            return_dict['value'].append(instr['marketValue'])
+            position_dict['ticker'].append(instr['instrument']['symbol'])
+            position_dict['value'].append(instr['marketValue'])
 
-        return pd.DataFrame(data = return_dict)
+        return pd.DataFrame(data = position_dict)
 
     def getOrder(self):
+        '''
+        ticker: Stock symbol
+        quantity: Number of stocks to buy/sell
+        action: BUY or SELL
+        order_type: MARKET or LIMIT
+        limit: Limit price
+        stats: Order status
+        '''
         response = self.client.get_account(self.ACC_ID, fields=['orders']).json()
-        # TODO: Enter orders when market closed and fill this part out
+        book = response['securitiesAccount']['orderStrategies']
+        order_dict = {
+            'ticker': list(),
+            'quantity': list(),
+            'action': list(),
+            'order_type': list(),
+            'limit': list(),
+            'status': list(),
+        }
+
+        for order in book:
+            order_dict['ticker'].append(order['orderLegCollection'][0]['instrument']['symbol'])
+            order_dict['quantity'].append(order['quantity'])
+            order_dict['action'].append(order['orderLegCollection'][0]['instruction'])
+            order_dict['order_type'].append(order['orderType'])
+            order_dict['limit'].append(order['price'])
+            order_dict['status'].append(order['status'])
+
+        return pd.DataFrame(data = order_dict)
 
     def placeOrderTDAmeritrade(self, client, account_id, order_book):
         order_queue = list()
@@ -45,12 +74,19 @@ class AccountClient:
             if order.action == 'SELL' and order.order_type == 'MARKET':
                 client.place_order(
                     account_id,
-                    equities.equity_sell_market(order.ticker, order.quantity),
+                    equities.equity_sell_market(
+                        order.ticker,
+                        order.quantity,
+                    ),
                 )
             elif order.action == 'SELL' and order.order_type == 'LIMIT':
                 client.place_order(
                     account_id,
-                    equities.equity_sell_limit(order.ticker, order.quantity, order.limit)
+                    equities.equity_sell_limit(
+                        order.ticker,
+                        order.quantity, 
+                        order.limit,
+                    ),
                 )
             else:
                 order_queue.append(order)
@@ -59,12 +95,19 @@ class AccountClient:
             if order.action == 'BUY' and order.order_type == 'MARKET':
                 client.place_order(
                     account_id,
-                    equities.equity_buy_market(order.ticker, order.quantity),
+                    equities.equity_buy_market(
+                        order.ticker,
+                        order.quantity,
+                    ),
                 )
             elif order.action == 'BUY' and order.order_type == 'LIMIT':
                 client.place_order(
                     account_id,
-                    equities.equity_buy_limit(order.ticker, order.quantity, order.limit)
+                    equities.equity_buy_limit(
+                        order.ticker,
+                        order.quantity,
+                        order.limit
+                    ),
                 )
 
 @dataclass(frozen=True)
@@ -74,6 +117,7 @@ class Order:
     quantity: Number of stocks to buy/sell
     action: BUY or SELL
     order_type: MARKET or LIMIT
+    limit: Limit price
     '''
     ticker: str
     quantity: int
@@ -147,4 +191,5 @@ if __name__ == '__main__':
     )
     client.set_enforce_enums(enforce_enums=False)
     account_client = AccountClient(client, ACC_NUMBER)
+    print(account_client.getOrder())
     print(account_client.getPosition())
