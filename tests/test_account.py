@@ -1,9 +1,41 @@
 from account import Order, OrderBuilder, AccountClient
+from unittest.mock import Mock, call
+from tda.orders import equities
 
 import unittest
 import pandas as pd
 import numpy as np
 
+
+class TestAccountClient(unittest.TestCase):
+    def setUp(self):
+        self.client_mock = Mock()
+        self.client_mock.get_account.return_value = 
+        self.acc_id_mock = Mock()
+
+        self.test_account = AccountClient(
+            self.client_mock,
+            self.acc_id_mock,
+        )
+
+        self.order_book = {
+            Order('Ticker1', 1, 'SELL', 'MARKET'),
+            Order('Ticker2', 1, 'SELL', 'MARKET'),
+            Order('Ticker3', 1, 'SELL', 'MARKET'),
+            Order('Ticker4', 1, 'SELL', 'MARKET'),
+            Order('Ticker5', 1, 'SELL', 'MARKET'),
+            Order('Ticker6', 5, 'BUY', 'MARKET'),
+            Order('GOOG', 5, 'BUY', 'LIMIT', 500),
+        }
+
+    def test_getPosition(self):
+        pass
+
+    def test_getOrder(self):
+        pass
+    
+    def test_placeOrderTDAmeritrade(self):
+        pass
 
 class TestOrder(unittest.TestCase):
     def test_order(self):
@@ -87,7 +119,3 @@ class TestOrderBuilder(unittest.TestCase):
                 Order('Ticker6', 5, 'BUY', 'MARKET'),
             },
         )
-
-class TestAccountClient(unittest.TestCase):
-    def setUp(self):
-        pass

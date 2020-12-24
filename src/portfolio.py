@@ -39,35 +39,6 @@ import random
 import json
 
 
-class InvalidMetric(Exception):
-    pass
-
-@dataclass
-class Stock:
-    '''
-    A single stock with the relevant price history. Contains internal message to calculate various statistics related to the stock.
-    
-    ..  attribute:: ticker
-
-        The ticker symbol of the stock as shown on relevant exchanges.
-
-    ..  attribute:: price_history
-
-        Holds Pandas dataframe containing daily, price data for a stock
-    '''
-
-    ticker: str
-    price_history: pd.DataFrame
-
-    def __eq__(self, other):
-        return self.ticker == other.ticker
-
-    def __ne__(self, other):
-        return self.ticker != other.ticker
-
-    def __hash__(self):
-        return id(self.ticker)
-
 @dataclass
 class DataBuilder:
     '''
@@ -164,6 +135,32 @@ class Portfolio:
     # Run strategy and create optimal holdings to pass to orderbuilder
     def run(self, test: bool = False):
         return self.strategy()
+
+@dataclass
+class Stock:
+    '''
+    A single stock with the relevant price history. Contains internal message to calculate various statistics related to the stock.
+    
+    ..  attribute:: ticker
+
+        The ticker symbol of the stock as shown on relevant exchanges.
+
+    ..  attribute:: price_history
+
+        Holds Pandas dataframe containing daily, price data for a stock
+    '''
+
+    ticker: str
+    price_history: pd.DataFrame
+
+    def __eq__(self, other):
+        return self.ticker == other.ticker
+
+    def __ne__(self, other):
+        return self.ticker != other.ticker
+
+    def __hash__(self):
+        return id(self.ticker)
 
 if __name__ == '__main__':
 
