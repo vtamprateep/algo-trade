@@ -8,11 +8,32 @@ import pandas as pd
 
 
 @dataclass
-class BackTest:
-    pass
+class BaseTest:
+    strategy: Iterable = set()
+    client = None
+    data_source = None
+    start = None
+    end = None
+    frequency: str = None
+    cash: int = None
 
-class FrontTest:
-    pass
+    def addStrategy(self, other):
+        self.strategy.add(other)
+
+@dataclass
+class BackTest(BaseTest):
+    def __post_init__(self):
+        pass
+
+    def run(self):
+        pass
+
+
+@dataclass
+class FrontTest(BaseTest):
+    def __post_init__(self):
+        pass
+
 
 if __name__ == '__main__':
     pass
