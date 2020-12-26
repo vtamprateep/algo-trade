@@ -27,7 +27,7 @@ DataBuilder
 '''
 
 from datetime import datetime, timedelta, date
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections.abc import Callable, Iterable
 from tda import client
 
@@ -68,7 +68,7 @@ class DataBuilder:
             )
             portfolio.addStock(stock)
 
-    def TDAmeritrade(self, client, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
+    def TDAmeritrade(self, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
         '''
         Output from TDA historicals in following format
         {
@@ -84,10 +84,10 @@ class DataBuilder:
             'empty': bool,
         }
         '''
-        client.set_enforce_enums(enforce_enums=False)
+        self.client.set_enforce_enums(enforce_enums=False)
 
         for ticker in stocks:
-            response = client.get_price_history(
+            response = self.client.get_price_history(
                 ticker,
                 period_type='year',
                 period=1,
@@ -108,7 +108,7 @@ class DataBuilder:
             )
             portfolio.addStock(stock)
 
-        client.set_enforce_enums(enforce_enums=True)
+        self.client.set_enforce_enums(enforce_enums=True)
 
 @dataclass
 class Portfolio:
@@ -116,8 +116,8 @@ class Portfolio:
     Portfolio class, contains a collection of stock objects representing various securities and their price data at different resolutions.
     '''
 
-    population: Iterable = set()
-    holdings: Iterable = set()
+    population: Iterable
+    holdings: Iterable = field(default_factory=set)
     freq_type: str = None
     freq: int = None
     start: date = None
