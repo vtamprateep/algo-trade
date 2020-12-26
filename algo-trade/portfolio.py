@@ -26,7 +26,7 @@ DataBuilder
 
 '''
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from dataclasses import dataclass
 from collections.abc import Callable, Iterable
 from tda import client
@@ -116,20 +116,18 @@ class Portfolio:
     Portfolio class, contains a collection of stock objects representing various securities and their price data at different resolutions.
     '''
 
-    population: Iterable =  None
-    client = None
-    databuilder = None
-    holdings = set()
+    population: Iterable = set()
+    holdings: Iterable = set()
+    freq_type: str = None
+    freq: int = None
+    start: date = None
     rf: float = None
-    resolution: str = None
-    min_period: int = None
-    dca: bool = False
 
     def add_stock(self, stock: Stock):
         self.holdings.add(stock)
 
     def strategy(self):
-        # Base class, override strategy when defining trading algorithms
+        # Base class, override strategy when defining trading algorithms, should return dataframe with holdings and weight of each
         pass
 
     # Run strategy and create optimal holdings to pass to orderbuilder

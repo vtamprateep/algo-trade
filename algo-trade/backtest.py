@@ -1,9 +1,7 @@
 from datetime import datetime, timedelta, date
-
 from dataclasses import dataclass
 from collections.abc import Iterable
 
-import backtrader as bt
 import pandas as pd
 
 
