@@ -5,8 +5,8 @@ with open('README.md', 'r', encoding='utf-8') as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='algo-trade',
-    version='0.0.1',
+    name='algo_trade',
+    version='0.0.2',
     author='Vinyou Tamprateep',
     description='Small package to test and implement portfolio trading algorithms',
     long_description=long_description,

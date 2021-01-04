@@ -17,6 +17,26 @@ import dotenv
 import os, json
 
 
+@dataclass(frozen=True)
+class Order:
+    '''
+    ticker: Stock symbol
+    quantity: Number of stocks to buy/sell
+    action: BUY or SELL
+    order_type: MARKET or LIMIT
+    limit: Limit price
+    '''
+    ticker: str
+    quantity: int
+    action: str
+    order_type: str
+    limit: float = None
+
+    def __post_init__(self):
+        assert self.quantity > 0, 'Cannot buy/sell less than one security'
+        if self.order_type.upper() == 'LIMIT':
+            assert self.limit and self.limit > 0, 'Missing limit on limit order'
+
 @dataclass
 class AccountClient:
 
@@ -26,6 +46,16 @@ class AccountClient:
 
     def __post_init__(self):
         self.client.set_enforce_enums(enforce_enums=False)
+
+    def __getPrice(self, symbol: list):
+        response = self.client.get_quotes(symbol).json()
+        entries = list()
+        for sym in symbol:
+            entries.append(
+                [sym, response[sym]['lastPrice']]
+            )
+            
+        return pd.DataFrame(data = entries, columns=['ticker', 'price'])
 
     @property
     def balance(self):
@@ -62,25 +92,14 @@ class AccountClient:
         entries = list()
 
         for instr in positions:
-            if instr['instrument']['symbol'] not in {'MMDA1'}:
-                entries.append(
-                    [instr['instrument']['symbol'], instr['marketValue']]
-                )
+            entries.append(
+                [instr['instrument']['symbol'], instr['marketValue']]
+            )
 
         position_df = pd.DataFrame(data = entries, columns = ['ticker', 'weight'])
-        position_df['weight'] = position_df['weight'] / position_df['weight'].sum()
+        position_df['weight'] = position_df['weight'] / self.balance
 
         return position_df    
-
-    def __getPrice(self, symbol: list):
-        response = self.client.get_quotes(symbol).json()
-        entries = list()
-        for sym in symbol:
-            entries.append(
-                [sym, response[sym]['lastPrice']]
-            )
-            
-        return pd.DataFrame(data = entries, columns=['ticker', 'price'])
 
     def buildOrder(self, target_state: pd.DataFrame, dca: bool = False):
         '''
@@ -98,19 +117,24 @@ class AccountClient:
         else:
             current_balance = self.balance
             current_state = self.position
+
             join_df = current_state.merge(
                 target_state,
                 how='outer',
                 on='ticker',
                 suffixes=('_current', '_target'),
             ).fillna(0)
-            join_df['weight'] = join_df['weight_target'] - join_df['weight_current']
-            diff_df = join_df[['weight']]
+            join_df['weight'] = (join_df['weight_target'] - join_df['weight_current']) * -1
+            
+            diff_df = join_df[['ticker', 'weight']]
 
         price_df = self.__getPrice(diff_df['ticker'].tolist())
         for _, row in diff_df.iterrows():
             quantity = int(row['weight'] * current_balance / price_df[price_df['ticker'] == row['ticker']]['price'])
-            if quantity > 0:
+
+            if row['ticker'] == 'MMDA1':
+                continue
+            elif quantity > 0:
                 self.order_book.add(
                     Order(
                         ticker = row['ticker'],
@@ -171,48 +195,3 @@ class AccountClient:
                         order.limit
                     ),
                 )
-
-@dataclass(frozen=True)
-class Order:
-    '''
-    ticker: Stock symbol
-    quantity: Number of stocks to buy/sell
-    action: BUY or SELL
-    order_type: MARKET or LIMIT
-    limit: Limit price
-    '''
-    ticker: str
-    quantity: int
-    action: str
-    order_type: str
-    limit: float = None
-
-    def __post_init__(self):
-        assert self.quantity > 0, 'Cannot buy/sell less than one security'
-        if self.order_type.upper() == 'LIMIT':
-            assert self.limit and self.limit > 0, 'Missing limit on limit order'
-
-if __name__ == '__main__':
-    dotenv.load_dotenv()
-
-    TD_KEY = os.getenv('CONSUMER_KEY')
-    ACC_NUMBER = os.getenv('ACC_NUMBER')
-    REDIRECT_URI = os.getenv('REDIRECT_URI')
-    TOKEN_PATH = os.path.join('/Users/vtamprateep/Documents/temp_token', 'token.pickle')
-    API_KEY = TD_KEY + '@AMER.OAUTHAP'
-    
-    client = auth.easy_client(
-        api_key = API_KEY, 
-        redirect_uri = REDIRECT_URI,
-        token_path = TOKEN_PATH,
-    )
-    account_client = AccountClient(client = client, ACC_ID = ACC_NUMBER)
-    account_client.buildOrder(
-        pd.DataFrame(data={
-            'ticker': ['SPY', 'IWM'],
-            'weight': [0.75, 0.25],
-        }),
-        dca = True,
-    )
-    print(account_client.order_book)
-    #account_client.placeOrderTDAmeritrade()

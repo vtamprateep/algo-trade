@@ -1,7 +1,9 @@
 .DS_Store
 .env
+.pytest_cache
 dist
 build
-algo_portfolio_management.egg-info
+algo_trade.egg-info
 src/temp_token
 src/test_strat.py
+test_strategy
