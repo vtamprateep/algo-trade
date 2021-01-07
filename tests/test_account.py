@@ -1,4 +1,4 @@
-from account import Order, OrderBuilder, AccountClient
+from account import AccountClient, Order
 from unittest.mock import Mock, call
 from tda.orders import equities
 
@@ -10,7 +10,6 @@ import numpy as np
 class TestAccountClient(unittest.TestCase):
     def setUp(self):
         self.client_mock = Mock()
-        self.client_mock.get_account.return_value = 
         self.acc_id_mock = Mock()
 
         self.test_account = AccountClient(
