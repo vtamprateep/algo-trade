@@ -47,6 +47,29 @@ class AccountClient:
     def __post_init__(self):
         self.client.set_enforce_enums(enforce_enums=False)
 
+    def __createOrder(self, ticker, quantity, action, order_type):
+        self.order_book.add(
+                    Order(
+                        ticker = ticker,
+                        quantity = quantity,
+                        action = action,
+                        order_type = order_type,
+                    )
+                )
+        return
+
+    def __getPortfolioChange(self, cur_state, tar_state):
+        join_df = cur_state.merge(
+            tar_state,
+            how='outer',
+            on='ticker',
+            suffixes=('_current', '_target'),
+        ).fillna(0)
+        join_df['weight'] = (join_df['weight_target'] - join_df['weight_current']) * -1
+        
+        result_df = join_df[['ticker', 'weight']]
+        return result_df
+
     def __getPrice(self, symbol: list):
         response = self.client.get_quotes(symbol).json()
         entries = list()
@@ -56,6 +79,48 @@ class AccountClient:
             )
             
         return pd.DataFrame(data = entries, columns=['ticker', 'price'])
+
+    def __submitBuy(self, order):
+        if order.action == 'BUY' and order.order_type == 'MARKET':
+                self.client.place_order(
+                    self.ACC_ID,
+                    equities.equity_buy_market(
+                        order.ticker,
+                        order.quantity,
+                    ),
+                )
+        elif order.action == 'BUY' and order.order_type == 'LIMIT':
+            self.client.place_order(
+                self.ACC_ID,
+                equities.equity_buy_limit(
+                    order.ticker,
+                    order.quantity,
+                    order.limit
+                ),
+            )
+        else:
+            raise Exception('Invalid BUY order.')
+
+    def __submitSell(self, order):
+        if order.action == 'SELL' and order.order_type == 'MARKET':
+                self.client.place_order(
+                    self.ACC_ID,
+                    equities.equity_sell_market(
+                        order.ticker,
+                        order.quantity,
+                    ),
+                )
+        elif order.action == 'SELL' and order.order_type == 'LIMIT':
+            self.client.place_order(
+                self.ACC_ID,
+                equities.equity_sell_limit(
+                    order.ticker,
+                    order.quantity, 
+                    order.limit,
+                ),
+            )
+        else:
+            raise Exception('Invalid SELL order.')
 
     @property
     def balance(self):
@@ -116,82 +181,29 @@ class AccountClient:
             diff_df['weight'] = diff_df['weight'] * -1
         else:
             current_balance = self.balance
-            current_state = self.position
-
-            join_df = current_state.merge(
-                target_state,
-                how='outer',
-                on='ticker',
-                suffixes=('_current', '_target'),
-            ).fillna(0)
-            join_df['weight'] = (join_df['weight_target'] - join_df['weight_current']) * -1
-            
-            diff_df = join_df[['ticker', 'weight']]
+            diff_df = self.__getPortfolioChange(self.position, target_state)
 
         price_df = self.__getPrice(diff_df['ticker'].tolist())
+
         for _, row in diff_df.iterrows():
             quantity = int(row['weight'] * current_balance / price_df[price_df['ticker'] == row['ticker']]['price'])
 
-            if row['ticker'] == 'MMDA1':
+            if row['ticker'] == 'MMDA1': # MMDA1 == Cash
                 continue
             elif quantity > 0:
-                self.order_book.add(
-                    Order(
-                        ticker = row['ticker'],
-                        quantity = quantity,
-                        action = 'SELL',
-                        order_type = 'MARKET',
-                    )
-                )
+                self.__createOrder(row['ticker'], quantity, 'SELL', 'MARKET')
             elif quantity < 0:
-                self.order_book.add(
-                    Order(
-                        ticker = row['ticker'],
-                        quantity = abs(quantity),
-                        action = 'BUY',
-                        order_type = 'MARKET',
-                    )
-                )
-        return
+                self.__createOrder(row['ticker'], abs(quantity), 'BUY', 'MARKET')
+        return self.order_book
 
     def placeOrderTDAmeritrade(self):
         order_queue = list()
+
         for order in self.order_book:
-            if order.action == 'SELL' and order.order_type == 'MARKET':
-                self.client.place_order(
-                    self.ACC_ID,
-                    equities.equity_sell_market(
-                        order.ticker,
-                        order.quantity,
-                    ),
-                )
-            elif order.action == 'SELL' and order.order_type == 'LIMIT':
-                self.client.place_order(
-                    self.ACC_ID,
-                    equities.equity_sell_limit(
-                        order.ticker,
-                        order.quantity, 
-                        order.limit,
-                    ),
-                )
+            if order.action == 'SELL':
+                self.__submitSell(order)
             else:
                 order_queue.append(order)
 
         for order in order_queue:
-            if order.action == 'BUY' and order.order_type == 'MARKET':
-                self.client.place_order(
-                    self.ACC_ID,
-                    equities.equity_buy_market(
-                        order.ticker,
-                        order.quantity,
-                    ),
-                )
-            elif order.action == 'BUY' and order.order_type == 'LIMIT':
-                self.client.place_order(
-                    self.ACC_ID,
-                    equities.equity_buy_limit(
-                        order.ticker,
-                        order.quantity,
-                        order.limit
-                    ),
-                )
+            self.__submitBuy(order)
