@@ -17,26 +17,6 @@ import dotenv
 import os, json
 
 
-@dataclass(frozen=True)
-class Order:
-    '''
-    ticker: Stock symbol
-    quantity: Number of stocks to buy/sell
-    action: BUY or SELL
-    order_type: MARKET or LIMIT
-    limit: Limit price
-    '''
-    ticker: str
-    quantity: int
-    action: str
-    order_type: str
-    limit: float = None
-
-    def __post_init__(self):
-        assert self.quantity > 0, 'Cannot buy/sell less than one security'
-        if self.order_type.upper() == 'LIMIT':
-            assert self.limit and self.limit > 0, 'Missing limit on limit order'
-
 @dataclass
 class AccountClient:
 
@@ -45,40 +25,7 @@ class AccountClient:
     order_book: set = field(default_factory=set)
 
     def __post_init__(self):
-        self.client.set_enforce_enums(enforce_enums=False)
-
-    def __createOrder(self, ticker, quantity, action, order_type):
-        self.order_book.add(
-                    Order(
-                        ticker = ticker,
-                        quantity = quantity,
-                        action = action,
-                        order_type = order_type,
-                    )
-                )
-        return
-
-    def __getPortfolioChange(self, cur_state, tar_state):
-        join_df = cur_state.merge(
-            tar_state,
-            how='outer',
-            on='ticker',
-            suffixes=('_current', '_target'),
-        ).fillna(0)
-        join_df['weight'] = (join_df['weight_target'] - join_df['weight_current']) * -1
-        
-        result_df = join_df[['ticker', 'weight']]
-        return result_df
-
-    def __getPrice(self, symbol: list):
-        response = self.client.get_quotes(symbol).json()
-        entries = list()
-        for sym in symbol:
-            entries.append(
-                [sym, response[sym]['lastPrice']]
-            )
-            
-        return pd.DataFrame(data = entries, columns=['ticker', 'price'])
+        self.client.set_enforce_enums(enforce_enums=False)    
 
     def __submitBuy(self, order):
         if order.action == 'BUY' and order.order_type == 'MARKET':
@@ -166,37 +113,15 @@ class AccountClient:
 
         return position_df    
 
-    def buildOrder(self, target_state: pd.DataFrame, dca: bool = False):
-        '''
-        Dataframe structure:
-        ticker: str
-        weight: float
-        '''
+    def get_price(self, symbol: list):
+        response = self.client.get_quotes(symbol).json()
+        entries = dict()
+        for sym in symbol:
+            entries[sym] = response[sym]['lastPrice']
+            
+        return entries
 
-        self.order_book.clear()
-        
-        if dca:
-            current_balance = self.cash
-            diff_df = target_state
-            diff_df['weight'] = diff_df['weight'] * -1
-        else:
-            current_balance = self.balance
-            diff_df = self.__getPortfolioChange(self.position, target_state)
-
-        price_df = self.__getPrice(diff_df['ticker'].tolist())
-
-        for _, row in diff_df.iterrows():
-            quantity = int(row['weight'] * current_balance / price_df[price_df['ticker'] == row['ticker']]['price'])
-
-            if row['ticker'] == 'MMDA1': # MMDA1 == Cash
-                continue
-            elif quantity > 0:
-                self.__createOrder(row['ticker'], quantity, 'SELL', 'MARKET')
-            elif quantity < 0:
-                self.__createOrder(row['ticker'], abs(quantity), 'BUY', 'MARKET')
-        return self.order_book
-
-    def placeOrderTDAmeritrade(self):
+    def place_order_TDAmeritrade(self):
         order_queue = list()
 
         for order in self.order_book:
