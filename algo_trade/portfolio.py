@@ -2,15 +2,7 @@
 The portfolio module includes modules needed import data and perform analysis to select a basket of stocks using Markowitz's efficient frontier portfolio theory.
 
 This module contains the following classes:
-    - Stock
     - Portfolio
-    - DataBuilder
-
-Stock
------
-
-..  autoclass:: Stock
-    :members:
 
 Portfolio
 ---------
@@ -18,123 +10,19 @@ Portfolio
 ..  autoclass:: Portfolio
     :members:
 
-DataBuilder
------------
-
-..  autoclass:: DataBuilder
-    :members:
-
 '''
 
-from datetime import datetime, timedelta, date
-from dataclasses import dataclass, field
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, date
 from tda import client
 
-import yfinance as yf
-import pandas as pd
-import numpy as np
-import math
-import random
 import json
+import math
+import numpy as np
+import pandas as pd
+import yfinance as yf
 
-
-@dataclass
-class Stock:
-    '''
-    A single stock with the relevant price history. Contains internal message to calculate various statistics related to the stock.
-    
-    ..  attribute:: ticker
-
-        The ticker symbol of the stock as shown on relevant exchanges.
-
-    ..  attribute:: price_history
-
-        Holds Pandas dataframe containing daily, price data for a stock
-    '''
-
-    ticker: str
-    price_history: pd.DataFrame
-
-    def __eq__(self, other):
-        return self.ticker == other.ticker
-
-    def __ne__(self, other):
-        return self.ticker != other.ticker
-
-    def __hash__(self):
-        return id(self.ticker)
-
-@dataclass
-class DataBuilder:
-    '''
-    Builder class. Takes population of stock tickers and the Portfolio object, creates individual Stock objects directly within the portfolio class. Connects with yfinance API to pull pricing data.
-
-    ..  attribute:: ticker_list
-
-        List of tickers we want to collect into our portfolio for analysis
-    '''
-
-    # Use 1 year Treasury yield rate
-    rf: float = yf.Ticker("SHY").info['yield']
-    client = None
-
-    def YahooFinance(self, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
-        data = yf.download(
-            tickers = ' '.join(stocks),
-            period = period,
-            interval = interval,
-            group_by = 'ticker',
-        )
-        
-        for ticker in stocks:
-            stock = Stock(
-                ticker = ticker,
-                price_history = data[ticker],
-            )
-            portfolio.addStock(stock)
-
-    def TDAmeritrade(self, portfolio, stocks: list, period: str = '1y', interval: str = '1d'):
-        '''
-        Output from TDA historicals in following format
-        {
-            'candles': List[{
-                'open': float,
-                'high': float,
-                'low': float,
-                'close': float,
-                'volume': int (units of millions),
-                'datetime': (units of miliseconds)
-            }],
-            'symbol': str,
-            'empty': bool,
-        }
-        '''
-        self.client.set_enforce_enums(enforce_enums=False)
-
-        for ticker in stocks:
-            response = self.client.get_price_history(
-                ticker,
-                period_type='year',
-                period=1,
-                frequency_type='daily',
-                frequeny=1,
-            ).json()
-
-            price_history = pd.DataFrame(
-                data=response['candles'],
-                columns=['datetime', 'open', 'high', 'low', 'close'],
-            )
-            price_history['datetime'] = pd.to_datetime(price_history['datetime'], unit='ms')
-
-            stock = Stock(
-                ticker = ticker,
-                price = price_history,
-                rf = self.rf,
-            )
-            portfolio.addStock(stock)
-
-        self.client.set_enforce_enums(enforce_enums=True)
 
 @dataclass
 class Portfolio:
@@ -143,12 +31,8 @@ class Portfolio:
     '''
 
     population: Iterable = None
-    holdings: Iterable = field(default_factory=set)
-    start: date = None
-    rf: float = None
-
-    def add_stock(self, stock: Stock):
-        self.holdings.add(stock)
+    holdings: Iterable = field(default=dict)
+    rf: float = yf.Ticker("SHY").info['yield']
 
     def strategy(self):
         # Base class, override strategy when defining trading algorithms, should return dataframe with holdings and weight of each
@@ -157,3 +41,87 @@ class Portfolio:
     # Run strategy and create optimal holdings to pass to orderbuilder
     def run(self, test: bool = False):
         return self.strategy()
+
+def get_data_YahooFinance(stocks: list, period: str = '1y', interval: str = '1d'):
+    result_dict = dict()
+
+    data = yf.download(
+        tickers = ' '.join(stocks),
+        period = period,
+        interval = interval,
+        group_by = 'ticker',
+    )
+    data.dropna(inplace=True)
+
+    if len(stocks) == 1:
+        result_dict[stocks[0]] = data.drop(['Adj Close', 'Volume'], axis=1)
+    else:
+        for ticker in stocks:
+            result_dict[ticker] = data[ticker].drop(['Adj Close', 'Volume'], axis=1)
+
+    return result_dict
+
+# In Development
+def get_data_TDAmeritrade(client, stocks: list, period: str = '1y', interval: str = '1d'):
+    '''
+    Output from TDA historicals in following format
+    {
+        'candles': List[{
+            'open': float,
+            'high': float,
+            'low': float,
+            'close': float,
+            'volume': int (units of millions),
+            'datetime': (units of miliseconds)
+        }],
+        'symbol': str,
+        'empty': bool,
+    }
+    '''
+    result_dict = dict()
+
+    for ticker in stocks:
+        response = client.get_price_history(
+            ticker,
+            period_type='year',
+            period=1,
+            frequency_type='daily',
+            frequeny=1,
+        ).json()
+
+        price_history = pd.DataFrame(
+            data=response['candles'],
+            columns=['Date', 'Open', 'High', 'Low', 'Close'],
+        )
+        price_history['Date'] = price_history['Date'].dt.date
+
+        result_dict[ticker] = price_history.set_index('Date')
+
+    return result_dict
+
+def rebalance(tar: pd.DataFrame, cur: pd.DataFrame = None):
+    assert 0 <= tar['weight'].sum() <= 1, Exception('Invalid portfolio weights')
+
+    if cur is None:
+        tar['weight'] = tar['weight'] * -1
+        return tar
+    else:
+        assert 0 <= cur['weight'].sum() <= 1, Exception('Invalid portfolio weights')
+
+        join_df = cur.merge(
+            tar,
+            how='outer',
+            on='ticker',
+            suffixes=('_cur', '_tar'),
+        ).fillna(0)
+
+        join_df['weight'] = (join_df['weight_tar'] - join_df['weight_cur']) * -1
+        rebalance_df = join_df[['ticker', 'weight']]
+
+        try:
+            rebalance_df = rebalance_df[rebalance_df['ticker'] != 'MMDA1']
+        except:
+            pass
+
+        print(rebalance_df.sort_values(by=['ticker']).reset_index(drop=True))
+        return rebalance_df.sort_values(by=['ticker']).reset_index(drop=True)
