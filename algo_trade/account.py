@@ -8,8 +8,10 @@ This module contains the following classes:
 '''
 
 from dataclasses import dataclass, field
+from order import Order
 from tda.orders import equities
 from tda import auth, client
+from typing import Iterable
 from pathlib import Path
 
 import pandas as pd
@@ -36,7 +38,7 @@ class AccountClient:
                         order.quantity,
                     ),
                 )
-        elif order.action == 'BUY' and order.order_type == 'LIMIT':
+        elif order.action == 'BUY' and order.order_type == 'LIMIT' and order.limit:
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_buy_limit(
@@ -57,7 +59,7 @@ class AccountClient:
                         order.quantity,
                     ),
                 )
-        elif order.action == 'SELL' and order.order_type == 'LIMIT':
+        elif order.action == 'SELL' and order.order_type == 'LIMIT' and order.limit:
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_sell_limit(
@@ -121,10 +123,10 @@ class AccountClient:
             
         return entries
 
-    def place_order_TDAmeritrade(self):
+    def place_order_TDAmeritrade(self, book: Iterable[Order]):
         order_queue = list()
 
-        for order in self.order_book:
+        for order in book:
             if order.action == 'SELL':
                 self.__submitSell(order)
             else:

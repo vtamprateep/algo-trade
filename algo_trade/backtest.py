@@ -1,13 +1,17 @@
+'''
+In development
+'''
+
 from datetime import datetime, timedelta, date
-from dataclasses import dataclass
-from collections.abc import Iterable
+from dataclasses import dataclass, field
+from typing import Iterable
 
 import pandas as pd
 
 
 @dataclass
 class BaseTest:
-    strategy: Iterable = set()
+    strategy: Iterable = field(default=set)
     client = None
     data_source = None
     start = None
