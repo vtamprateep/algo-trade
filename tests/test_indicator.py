@@ -1,9 +1,7 @@
-from portfolio import DataBuilder
-
-import pandas as pd
-import numpy as np
-import unittest
 import indicator
+import numpy as np
+import pandas as pd
+import unittest
 
 
 class TestIndicator(unittest.TestCase):

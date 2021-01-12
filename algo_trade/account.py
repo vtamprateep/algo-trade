@@ -8,34 +8,16 @@ This module contains the following classes:
 '''
 
 from dataclasses import dataclass, field
+from order import Order
 from tda.orders import equities
 from tda import auth, client
+from typing import Iterable
 from pathlib import Path
 
 import pandas as pd
 import dotenv
 import os, json
 
-
-@dataclass(frozen=True)
-class Order:
-    '''
-    ticker: Stock symbol
-    quantity: Number of stocks to buy/sell
-    action: BUY or SELL
-    order_type: MARKET or LIMIT
-    limit: Limit price
-    '''
-    ticker: str
-    quantity: int
-    action: str
-    order_type: str
-    limit: float = None
-
-    def __post_init__(self):
-        assert self.quantity > 0, 'Cannot buy/sell less than one security'
-        if self.order_type.upper() == 'LIMIT':
-            assert self.limit and self.limit > 0, 'Missing limit on limit order'
 
 @dataclass
 class AccountClient:
@@ -45,17 +27,49 @@ class AccountClient:
     order_book: set = field(default_factory=set)
 
     def __post_init__(self):
-        self.client.set_enforce_enums(enforce_enums=False)
+        self.client.set_enforce_enums(enforce_enums=False)    
 
-    def __getPrice(self, symbol: list):
-        response = self.client.get_quotes(symbol).json()
-        entries = list()
-        for sym in symbol:
-            entries.append(
-                [sym, response[sym]['lastPrice']]
+    def __submitBuy(self, order):
+        if order.action == 'BUY' and order.order_type == 'MARKET':
+                self.client.place_order(
+                    self.ACC_ID,
+                    equities.equity_buy_market(
+                        order.ticker,
+                        order.quantity,
+                    ),
+                )
+        elif order.action == 'BUY' and order.order_type == 'LIMIT' and order.limit:
+            self.client.place_order(
+                self.ACC_ID,
+                equities.equity_buy_limit(
+                    order.ticker,
+                    order.quantity,
+                    order.limit
+                ),
             )
-            
-        return pd.DataFrame(data = entries, columns=['ticker', 'price'])
+        else:
+            raise Exception('Invalid BUY order.')
+
+    def __submitSell(self, order):
+        if order.action == 'SELL' and order.order_type == 'MARKET':
+                self.client.place_order(
+                    self.ACC_ID,
+                    equities.equity_sell_market(
+                        order.ticker,
+                        order.quantity,
+                    ),
+                )
+        elif order.action == 'SELL' and order.order_type == 'LIMIT' and order.limit:
+            self.client.place_order(
+                self.ACC_ID,
+                equities.equity_sell_limit(
+                    order.ticker,
+                    order.quantity, 
+                    order.limit,
+                ),
+            )
+        else:
+            raise Exception('Invalid SELL order.')
 
     @property
     def balance(self):
@@ -101,97 +115,22 @@ class AccountClient:
 
         return position_df    
 
-    def buildOrder(self, target_state: pd.DataFrame, dca: bool = False):
-        '''
-        Dataframe structure:
-        ticker: str
-        weight: float
-        '''
-
-        self.order_book.clear()
-        
-        if dca:
-            current_balance = self.cash
-            diff_df = target_state
-            diff_df['weight'] = diff_df['weight'] * -1
-        else:
-            current_balance = self.balance
-            current_state = self.position
-
-            join_df = current_state.merge(
-                target_state,
-                how='outer',
-                on='ticker',
-                suffixes=('_current', '_target'),
-            ).fillna(0)
-            join_df['weight'] = (join_df['weight_target'] - join_df['weight_current']) * -1
+    def get_price(self, symbol: list):
+        response = self.client.get_quotes(symbol).json()
+        entries = dict()
+        for sym in symbol:
+            entries[sym] = response[sym]['lastPrice']
             
-            diff_df = join_df[['ticker', 'weight']]
+        return entries
 
-        price_df = self.__getPrice(diff_df['ticker'].tolist())
-        for _, row in diff_df.iterrows():
-            quantity = int(row['weight'] * current_balance / price_df[price_df['ticker'] == row['ticker']]['price'])
-
-            if row['ticker'] == 'MMDA1':
-                continue
-            elif quantity > 0:
-                self.order_book.add(
-                    Order(
-                        ticker = row['ticker'],
-                        quantity = quantity,
-                        action = 'SELL',
-                        order_type = 'MARKET',
-                    )
-                )
-            elif quantity < 0:
-                self.order_book.add(
-                    Order(
-                        ticker = row['ticker'],
-                        quantity = abs(quantity),
-                        action = 'BUY',
-                        order_type = 'MARKET',
-                    )
-                )
-        return
-
-    def placeOrderTDAmeritrade(self):
+    def place_order_TDAmeritrade(self, book: Iterable[Order]):
         order_queue = list()
-        for order in self.order_book:
-            if order.action == 'SELL' and order.order_type == 'MARKET':
-                self.client.place_order(
-                    self.ACC_ID,
-                    equities.equity_sell_market(
-                        order.ticker,
-                        order.quantity,
-                    ),
-                )
-            elif order.action == 'SELL' and order.order_type == 'LIMIT':
-                self.client.place_order(
-                    self.ACC_ID,
-                    equities.equity_sell_limit(
-                        order.ticker,
-                        order.quantity, 
-                        order.limit,
-                    ),
-                )
+
+        for order in book:
+            if order.action == 'SELL':
+                self.__submitSell(order)
             else:
                 order_queue.append(order)
 
         for order in order_queue:
-            if order.action == 'BUY' and order.order_type == 'MARKET':
-                self.client.place_order(
-                    self.ACC_ID,
-                    equities.equity_buy_market(
-                        order.ticker,
-                        order.quantity,
-                    ),
-                )
-            elif order.action == 'BUY' and order.order_type == 'LIMIT':
-                self.client.place_order(
-                    self.ACC_ID,
-                    equities.equity_buy_limit(
-                        order.ticker,
-                        order.quantity,
-                        order.limit
-                    ),
-                )
+            self.__submitBuy(order)
