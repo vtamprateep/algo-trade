@@ -14,9 +14,12 @@ from tda import auth, client
 from typing import Iterable
 from pathlib import Path
 
-import pandas as pd
+
 import dotenv
-import os, json
+import json
+import os
+import pandas as pd
+import selenium
 
 
 @dataclass
@@ -74,12 +77,12 @@ class AccountClient:
     @property
     def balance(self):
         response = self.client.get_account(self.ACC_ID).json()
-        return response['securitiesAccount']['initialBalances']['liquidationValue']
+        return response['securitiesAccount']['currentBalances']['liquidationValue']
 
     @property
     def cash(self):
         response = self.client.get_account(self.ACC_ID).json()
-        return response['securitiesAccount']['initialBalances']['cashAvailableForTrading']
+        return response['securitiesAccount']['currentBalances']['cashAvailableForTrading']
 
     @property
     def order(self):
@@ -134,3 +137,10 @@ class AccountClient:
 
         for order in order_queue:
             self.__submitBuy(order)
+
+def refresh_token(api_key, redirect_url, token_path, webdriver_path = None):
+    with selenium.webdriver.Chrome(webdriver_path) as driver:
+        auth.client_from_login_flow(
+            driver, api_key, redirect_url, token_path)
+    
+    return
