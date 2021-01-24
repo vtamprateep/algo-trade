@@ -14,14 +14,8 @@ Portfolio
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, date
-from tda import client
 
-import json
-import math
-import numpy as np
 import pandas as pd
-import yfinance as yf
 
 
 @dataclass
@@ -30,9 +24,13 @@ class Portfolio:
     Portfolio class, contains a collection of stock objects representing various securities and their price data at different resolutions.
     '''
 
+    data: object = None
+    params: dict = field(default=dict)
     population: Iterable = None
-    holdings: Iterable = field(default=dict)
-    rf: float = yf.Ticker("SHY").info['yield']
+
+    def __post_init__(self):
+        assert self.population != None and len(self.population) != 0, 'Must have at least one symbol'
+        assert {'period_type', 'period', 'frequency_type', 'frequency'}.issubset(set(self.params.keys())), 'Missing one or more strategy parameter: period_type, period, frequency_type, frequency'
 
     def strategy(self):
         # Base class, override strategy when defining trading algorithms, should return dataframe with holdings and weight of each

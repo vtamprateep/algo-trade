@@ -11,31 +11,33 @@ import pandas as pd
 
 @dataclass
 class BaseTest:
-    strategy: Iterable = field(default=set)
-    client = None
-    data_source = None
-    start = None
-    end = None
-    frequency: str = None
-    cash: int = None
+    client: object = None
+    data: object = None
+    hparams: dict = field(default=dict)
+    population: set = field(default=set)
+    strategy: dict = field(default=dict)
+    _strategy_count: int = 1
 
-    def addStrategy(self, other):
-        self.strategy.add(other)
+    def add_strategy(self, other, name = None):
+        if name:
+            self.strategy[name] = other
+        else:
+            self.strategy[self._strategy_count] = other
+            self._strategy_count += 1
 
-@dataclass
-class BackTest(BaseTest):
-    def __post_init__(self):
-        pass
+        return
+
+    def compile(self, data_function):
+        
+
+    def configure(self):
+        for _, item in self.strategy.items():
+            self.population.update(item.population)
+
+        return
 
     def run(self):
         pass
-
-
-@dataclass
-class FrontTest(BaseTest):
-    def __post_init__(self):
-        pass
-
 
 if __name__ == '__main__':
     pass
