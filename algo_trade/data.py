@@ -1,6 +1,4 @@
-import numpy as np
 import pandas as pd
-import yfinance as yf
 import tda
 
 
@@ -8,7 +6,7 @@ import tda
 TDA API Search Instruments can take multiple ticker arguments
 '''
 
-def get_fundamental(client, symbols: list):
+def get_fundamental(client, symbols):
     response = client.search_instruments(symbols, 'fundamental')
 
     result_dict = dict()
@@ -17,7 +15,7 @@ def get_fundamental(client, symbols: list):
 
     return result_dict
 
-def get_price_history(client, symbols: list, period_type: str = 'year', period: int = 1, frequency_type: str = 'daily', frequency: int = 1, verbose: bool = False):
+def get_price_history(client, symbols, period_type = 'year', period = 1, frequency_type = 'daily', frequency = 1, verbose = False):
     
     '''
     Output from TDA historicals in following format
@@ -50,11 +48,17 @@ def get_price_history(client, symbols: list, period_type: str = 'year', period: 
                 columns=['date', 'open', 'high', 'low', 'close'],
             )
         price_history['Date'] = price_history['Date'].dt.date
-        price_history = price_history.set_index('Date')
+        
+        series_dict = {
+            'open': price_history['open'].squeeze(),
+            'high': price_history['high'].squeeze(),
+            'low': price_history['low'].squeeze(),
+            'close': price_history['close'].squeeze(),
+        }
 
         if verbose:
-            result_dict[ticker] = price_history['close'].squeeze()
+            result_dict[ticker] = series_dict['close']
         else:
-            result_dict[ticker] = price_history
+            result_dict[ticker] = series_dict
 
     return result_dict
