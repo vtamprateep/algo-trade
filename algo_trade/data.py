@@ -57,8 +57,8 @@ def get_price_history(client, symbols, period_type = 'year', period = 1, frequen
         }
 
         if verbose:
-            result_dict[ticker] = series_dict['close']
-        else:
             result_dict[ticker] = series_dict
+        else:
+            result_dict[ticker] = series_dict['close']
 
     return result_dict
