@@ -8,15 +8,15 @@ This module contains the following classes:
 '''
 
 from dataclasses import dataclass, field
-from order import Order
 from tda.orders import equities
 from tda import auth, client
 from typing import Iterable
-from pathlib import Path
 
+
+import json
+import os
 import pandas as pd
-import dotenv
-import os, json
+import selenium
 
 
 @dataclass
@@ -74,12 +74,12 @@ class AccountClient:
     @property
     def balance(self):
         response = self.client.get_account(self.ACC_ID).json()
-        return response['securitiesAccount']['initialBalances']['liquidationValue']
+        return response['securitiesAccount']['currentBalances']['liquidationValue']
 
     @property
     def cash(self):
         response = self.client.get_account(self.ACC_ID).json()
-        return response['securitiesAccount']['initialBalances']['cashAvailableForTrading']
+        return response['securitiesAccount']['currentBalances']['cashAvailableForTrading']
 
     @property
     def order(self):
@@ -123,7 +123,7 @@ class AccountClient:
             
         return entries
 
-    def place_order_TDAmeritrade(self, book: Iterable[Order]):
+    def place_order_TDAmeritrade(self, book):
         order_queue = list()
 
         for order in book:
@@ -134,3 +134,13 @@ class AccountClient:
 
         for order in order_queue:
             self.__submitBuy(order)
+
+def refresh_token(webdriver_func, api_key, redirect_uri, token_path=None):
+    auth.client_from_login_flow(
+        webdriver=webdriver_func,
+        api_key=api_key,
+        redirect_url=redirect_uri,
+        token_path=token_path,
+    )
+
+    return
