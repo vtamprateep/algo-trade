@@ -15,7 +15,7 @@ def get_fundamental(client, symbols):
 
     return result_dict
 
-def get_price_history(client, symbols, period_type = 'year', period = 1, frequency_type = 'daily', frequency = 1, verbose = False):
+def get_price_history(client, symbols = None, period_type = 'year', period = 1, frequency_type = 'daily', frequency = 1, verbose = False, **kwargs):
     
     '''
     Output from TDA historicals in following format

@@ -22,16 +22,6 @@ import numpy as np
 import math
 
 
-def mean(data: pd.DataFrame, pct: bool = False, geo: bool = False):
-    if pct:
-        data = data.pct_change().dropna()
-
-    if geo:
-        g_mean = stats.mstats.gmean(data)
-        return pd.Series(data=g_mean, index=data.columns)
-    else:
-        return data.mean()
-
 def volatility(data: pd.DataFrame, pct: bool = False):
     if pct:
         data = data.pct_change().dropna()
