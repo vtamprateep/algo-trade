@@ -115,9 +115,13 @@ class AccountClient:
 
         return position_df    
 
-    def get_price(self, symbol: list):
+    def get_price(self, symbol):
         response = self.client.get_quotes(symbol).json()
         entries = dict()
+
+        if type(symbol) is str:
+            return {symbol:response[symbol]['lastPrice']}
+        
         for sym in symbol:
             entries[sym] = response[sym]['lastPrice']
             

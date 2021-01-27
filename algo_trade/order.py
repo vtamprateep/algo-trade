@@ -44,43 +44,41 @@ class OrderBuilder:
                 )
         return
 
-    def build_order(self, balance: int,  rebalance_df: pd.DataFrame, price: dict):
+    def __rebalance(self, tar_state, cur_state):
+        assert 0 <= tar_state['weight'].sum() <= 1, Exception('Invalid portfolio weights')
+        assert 0 <= cur_state['weight'].sum() <= 1, Exception('Invalid portfolio weights')
+
+        join_df = cur_state.merge(
+            tar_state,
+            how='outer',
+            on='ticker',
+            suffixes=('_current', '_target'),
+        ).fillna(0)
+
+        join_df['weight'] = (join_df['weight_target'] - join_df['weight_current'])
+        rebalance_df = join_df[['ticker', 'weight']]
+        
+        # Drop cash component
+        try:
+            rebalance_df = rebalance_df[rebalance_df['ticker'] != 'MMDA1']
+        except:
+            pass
+
+        return rebalance_df.reset_index(drop=True)
+
+    def build_order(self, balance: int, price: dict, tar_df, cur_df = None):
         assert balance > 0, Exception('Invalid balance')
         self.order_book.clear()
 
-        for _, row in rebalance_df.iterrows():
+        if cur_df is not None:
+            tar_df = self.__rebalance(tar_df, cur_df)
+
+        for _, row in tar_df.iterrows():
             quantity = int(row['weight'] * balance / price[row['ticker']])
 
             if quantity > 0:
-                self.__create_order(row['ticker'], quantity, 'SELL', 'MARKET')
+                self.__create_order(row['ticker'], quantity, 'BUY', 'MARKET')
             elif quantity < 0:
-                self.__create_order(row['ticker'], abs(quantity), 'BUY', 'MARKET')
+                self.__create_order(row['ticker'], abs(quantity), 'SELL', 'MARKET')
 
         return self.order_book
-
-    def rebalance(self, tar_state: pd.DataFrame, cur_state: pd.DataFrame = pd.DataFrame(columns=['ticker', 'weight'])):
-        assert 0 <= tar_state['weight'].sum() <= 1, Exception('Invalid portfolio weights')
-
-        if cur_state.empty:
-            tar_state['weight'] = tar_state['weight'] * -1
-            return tar_state
-        else:
-            assert 0 <= cur_state['weight'].sum() <= 1, Exception('Invalid portfolio weights')
-
-            join_df = cur_state.merge(
-                tar_state,
-                how='outer',
-                on='ticker',
-                suffixes=('_current', '_target'),
-            ).fillna(0)
-            join_df['weight'] = (join_df['weight_target'] - join_df['weight_current']) * -1
-            
-            rebalance_df = join_df[['ticker', 'weight']]
-            
-            # Drop cash component
-            try:
-                rebalance_df = rebalance_df[rebalance_df['ticker'] != 'MMDA1']
-            except:
-                pass
-            print(tar_state, '\n', rebalance_df)
-            return rebalance_df.reset_index(drop=True)
