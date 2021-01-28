@@ -23,5 +23,6 @@ setuptools.setup(
         'tda-api',
         'pandas',
         'numpy',
+        'python-crontab',
     ]
 )

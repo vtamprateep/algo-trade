@@ -1,6 +1,5 @@
 tda-api
 pandas
 numpy
-yfinance
 scipy
-python-dotenv
+Python-crontab

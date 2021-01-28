@@ -4,7 +4,6 @@ from tda import auth, client
 from pathlib import Path
 
 import pandas as pd
-import dotenv
 import os, json
 
 

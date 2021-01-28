@@ -16,7 +16,6 @@ The indicator class serves as a library of calculations, either by industry stan
 from datetime import datetime, timedelta
 from scipy import stats
 
-import yfinance as yf
 import pandas as pd
 import numpy as np
 import math

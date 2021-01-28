@@ -12,11 +12,9 @@ from tda.orders import equities
 from tda import auth, client
 from typing import Iterable
 
-
 import json
 import os
 import pandas as pd
-import selenium
 
 
 @dataclass
