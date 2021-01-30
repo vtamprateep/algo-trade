@@ -7,7 +7,10 @@ TDA API Search Instruments can take multiple ticker arguments
 '''
 
 def get_fundamental(client, symbols):
-    response = client.search_instruments(symbols, 'fundamental')
+    response = client.search_instruments(symbols, 'fundamental').json()
+    
+    if len(response) == 1:
+        return response[symbols]['fundamental']
 
     result_dict = dict()
     for key in response:
@@ -15,24 +18,24 @@ def get_fundamental(client, symbols):
 
     return result_dict
 
-def get_price_history(client, symbols = None, period_type = 'year', period = 1, frequency_type = 'daily', frequency = 1, verbose = False, **kwargs):
-    
-    '''
-    Output from TDA historicals in following format
-    {
-        'candles': List[{
-            'open': float,
-            'high': float,
-            'low': float,
-            'close': float,
-            'volume': int (units of millions),
-            'datetime': (units of miliseconds)
-        }],
-        'symbol': str,
-        'empty': bool,
-    }
-    '''
-    
+def get_price_history(client, symbols, period_type = 'year', period = 1, frequency_type = 'daily', frequency = 1):
+    if type(symbols) == str:
+        response = client.get_price_history(
+            symbols,
+            period_type=period_type,
+            period=period,
+            frequency_type=frequency_type,
+            frequeny=frequency,
+        ).json()
+
+        price_history = pd.DataFrame(
+                data=response['candles'],
+                columns=['date', 'open', 'high', 'low', 'close'],
+            )
+        price_history['Date'] = price_history['Date'].dt.date
+        
+        return price_history
+
     result_dict = dict()
     for ticker in symbols:
         response = client.get_price_history(
@@ -48,17 +51,7 @@ def get_price_history(client, symbols = None, period_type = 'year', period = 1, 
                 columns=['date', 'open', 'high', 'low', 'close'],
             )
         price_history['Date'] = price_history['Date'].dt.date
-        
-        series_dict = {
-            'open': price_history['open'].squeeze(),
-            'high': price_history['high'].squeeze(),
-            'low': price_history['low'].squeeze(),
-            'close': price_history['close'].squeeze(),
-        }
 
-        if verbose:
-            result_dict[ticker] = series_dict
-        else:
-            result_dict[ticker] = series_dict['close']
+        result_dict[ticker] = price_history
 
     return result_dict
