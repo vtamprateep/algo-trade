@@ -15,10 +15,10 @@ The indicator class serves as a library of calculations, either by industry stan
 
 from datetime import datetime, timedelta
 from scipy import stats
+from math import *
 
 import pandas as pd
 import numpy as np
-import math
 
 
 def volatility(data: pd.DataFrame, pct: bool = False):
@@ -42,7 +42,15 @@ def sharpe(data: pd.DataFrame, rf: float = 0, freq: str = 'year', geo = False):
     else:
         average = data.mean()
 
-    return average / data.std() * math.sqrt(freq_factor[freq])
+    return average / data.std() * sqrt(freq_factor[freq])
 
 def sortino(data: pd.DataFrame, rf: float):
     pass
+
+def black_scholes(stock_price, strike_price, time, rf, div, volatility, option_type):
+    d1 = (log(float(stock_price)/strike_price) + ((rf - div) + volatility * volatility / 2) * time) / (volatility*sqrt(time))
+    d2 = d1 - volatility * sqrt(time)
+    if option_type == 'call':
+        return stock_price * exp(-div * time) * stats.norm.cdf(d1) - strike_price*exp(-rf * time) * stats.norm.cdf(d2)
+    else:
+        return strike_price * exp(-rf * time) * stats.norm.cdf(-d2) - stock_price*exp(-div * time) * stats.norm.cdf(-d1)
