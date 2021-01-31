@@ -19,8 +19,10 @@ class BaseModel:
         if data:
             assert self.client != None, 'Missing TDAmeritrade client'
             assert 'period_type' in self.params, 'Missing period_type param'
+            assert self.params['period_type'] in {'day', 'month', 'year', 'ytd'}
             assert 'period' in self.params, 'Missing period param'
             assert 'frequency_type' in self.params, 'Missing frequency_type param'
+            assert self.params['frequency_type'] in {'minute', 'daily', 'weekly', 'monthly'}
             assert 'frequency' in self.params, 'Missing frequency param'
 
     def _get_data(self, client, symbols, period_type='year', period=1, frequency_type='daily', frequency=1):
@@ -70,8 +72,8 @@ class BaseModel:
                 self.population,
                 self.params['period_type'],
                 self.params['period'],
-                self.params.['frequency_type'],
-                self.params.['frequency'],
+                self.params['frequency_type'],
+                self.params['frequency'],
             )
 
         return self.strategy(self.data)
