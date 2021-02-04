@@ -1,14 +1,18 @@
 from dataclasses import dataclass, field
 from tda.orders import equities
-from tda import auth, client
-from pathlib import Path
 
 import pandas as pd
-import os, json
+import json
 
+
+class Event(object):
+    '''
+    Base class providing interface for all inherited events
+    '''
+    pass
 
 @dataclass(frozen=True)
-class Order:
+class OrderEvent(Event):
     '''
     ticker: Stock symbol
     quantity: Number of stocks to buy/sell
@@ -27,18 +31,23 @@ class Order:
         if self.order_type.upper() == 'LIMIT':
             assert self.limit and self.limit > 0, 'Missing limit on limit order'
 
+    def print_order(self):
+        print(
+            'Order: Ticker=%s, Type=%s, Quantity=%s, Action=%s, Limit=%s' % (self.ticker, self.order_type, self.quantity, self.action, self.limit)
+        )
+
 @dataclass
 class OrderBuilder:
 
-    order_book: Order = field(default_factory=set)
+    order_book: OrderEvent = field(default_factory=set)
 
     def __create_order(self, ticker, quantity, action, order_type):
         self.order_book.add(
-                    Order(
-                        ticker = ticker,
-                        quantity = quantity,
-                        action = action,
-                        order_type = order_type,
+                    OrderEvent(
+                        ticker=ticker,
+                        quantity=quantity,
+                        action=action,
+                        order_type=order_type,
                     )
                 )
         return
