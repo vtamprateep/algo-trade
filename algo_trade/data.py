@@ -1,10 +1,34 @@
+from abc import ABCMeta, abstractmethod
+
 import pandas as pd
 import tda
 
 
-'''
-TDA API Search Instruments can take multiple ticker arguments
-'''
+class DataHandler(object):
+    '''
+    Abstract base class providing interface for all subsequent data handlers. Goal is to output a generated set of bars (OHLCVI) for each symbol requested.
+    '''
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get_latest_bar(self, ticker):
+        raise NotImplementedError('Should implement get_latest_bar()')
+
+    @abstractmethod
+    def get_latest_bars(self, ticker, N=1):
+        raise NotImplementedError('Should implement get_latest_bars()')
+
+    @abstractmethod
+    def get_latest_bar_value(self, ticker, val_type):
+        raise NotImplementedError('Should implement get_latest_bar_value()')
+
+    @abstractmethod
+    def get_latest_bars_values(self, ticker, val_type, N=1):
+        raise NotImplementedError('Should implement get_latest_bars_values()')
+
+    @abstractmethod
+    def update_bars(self):
+        raise NotImplementedError('Should implement update_bars()')
 
 def get_fundamental(client, symbols):
     response = client.search_instruments(symbols, 'fundamental').json()

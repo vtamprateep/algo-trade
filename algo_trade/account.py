@@ -10,24 +10,29 @@ This module contains the following classes:
 from dataclasses import dataclass, field
 from tda.orders import equities
 from tda import auth, client
-from typing import Iterable
+from abc import ABCMeta, abstractmethod
 
 import json
 import os
 import pandas as pd
 
 
-@dataclass
-class AccountClient:
+class ExecutionHandler(object):
+    __metaclass__ = ABCMeta
 
-    ACC_ID: str
-    client: object
-    order_book: set = field(default_factory=set)
+    @abstractmethod
+    def execute_order(self, event):
+        raise NotImplementedError('Should implement execute_order()')
 
-    def __post_init__(self):
+class TDAccountHandler(ExecutionHandler):
+    def __init__(self, ACC_ID, client, order_book=field(default=set)):
+        self.ACC_ID = ACC_ID
+        self.client = client
+        self.order_book = order_book
+
         self.client.set_enforce_enums(enforce_enums=False)    
 
-    def __submitBuy(self, order):
+    def _submitBuy(self, order):
         if order.action == 'BUY' and order.order_type == 'MARKET':
                 self.client.place_order(
                     self.ACC_ID,
@@ -48,7 +53,7 @@ class AccountClient:
         else:
             raise Exception('Invalid BUY order.')
 
-    def __submitSell(self, order):
+    def _submitSell(self, order):
         if order.action == 'SELL' and order.order_type == 'MARKET':
                 self.client.place_order(
                     self.ACC_ID,
@@ -125,17 +130,17 @@ class AccountClient:
             
         return entries
 
-    def place_order_TDAmeritrade(self, book):
+    def execute_order(self, book):
         order_queue = list()
 
         for order in book:
             if order.action == 'SELL':
-                self.__submitSell(order)
+                self._submitSell(order)
             else:
                 order_queue.append(order)
 
         for order in order_queue:
-            self.__submitBuy(order)
+            self._submitBuy(order)
 
 def refresh_token(webdriver_func, api_key, redirect_uri, token_path=None):
     auth.client_from_login_flow(
