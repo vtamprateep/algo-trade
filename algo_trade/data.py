@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
+import os
+import numpy as np
 import pandas as pd
 import tda
 
@@ -29,6 +31,156 @@ class DataHandler(object):
     @abstractmethod
     def update_bars(self):
         raise NotImplementedError('Should implement update_bars()')
+
+class HistoricCSVDataHandler(DataHandler):
+    '''
+    Designed to read CSV files for each requested symbol from disk and provide an interface to obtain the "latest" bar in a manner identical to a live trading interface.
+    '''
+    def __init__(self, events, csv_dir, ticker_list):
+        self.events = events
+        self.csv_dir = csv_dir
+        self.ticker_list = ticker_list
+
+        self.ticker_data = dict()
+        self.latest_ticker_data = dict()
+        self.continue_backtest = True
+
+        self._open_convert_csv_files()
+
+    def _open_convert_csv_files(self):
+        '''
+        Opens CSV files from the data directory, converting them in pandas DataFrames within a ticker dictionary.
+
+        Current assumption is that the data is taken from YFinance.
+        '''
+        comb_index = None
+        for s in self.ticker_list:
+            self.ticker_data[s] = pd.io.parsers.read_csv(
+                os.path.join(self.csv_dir, '%s.csv' % s),
+                header=0,
+                index_col=0,
+                parse_dates=True,
+                names=[
+                    'datetime', 'open', 'high', 'low', 'close', 'volume', 'adj_close'
+                ]
+            ).sort()
+
+            if comb_index is None:
+                comb_index = self.ticker_data[s].index_col
+            else:
+                comb_index.union(self.ticker_data[s].index)
+
+            self.latest_ticker_data[s] = []
+
+        for s in self.ticker_list:
+            self.ticker_data[s] = self.ticker_data[s].reindex(index=comb_index, method='pad').iterrows()
+
+    def _get_new_bar(self, ticker):
+        '''
+        Returns latest bar from the data feed.
+        '''
+        for b in self.ticker_data[ticker]:
+            yield b
+
+    def get_latest_bar(self, ticker):
+        '''
+        Returns the last bar from the latest_ticker list.
+        '''
+        try:
+            bars_list = self.latest_ticker_data[ticker]
+        except KeyError:
+            print('That ticker is not available in the historical dataset.')
+            raise
+        else:
+            return bars_list[-1]
+
+    def get_latest_bars(self, ticker, N=1):
+        '''
+        Returns the last N bars from the latest_ticker list, of N-k if less available.
+        '''
+        try:
+            bars_list = self.latest_ticker_data[ticker]
+        except KeyError:
+            print('That ticker is not available in the historical dataset.')
+            raise
+        else:
+            return bars_list[-N:]
+
+    def get_latest_bar_datetime(self, ticker):
+        '''
+        Return Python datetime object for the last bar.
+        '''
+        try:
+            bars_list = self.latest_ticker_data[ticker]
+        except KeyError:
+            print('That ticker is not available in the historical dataset.')
+            raise
+        else:
+            return bars_list[-1][0]
+
+    def get_latest_bar_value(self, ticker, val_type):
+        '''
+        Returns one of the OHLCVI values from the pandas Bar series object.
+        '''
+        try:
+            bars_list = self.latest_ticker_data[ticker]
+        except KeyError:
+            print('That ticker is not available in the historical dataset.')
+            raise
+        else:
+            return getattr(bars_list[-1][1], val_type)
+
+    def get_latest_bars_values(self, ticker, val_type, N=1):
+        '''
+        Returns last N bar values from the latest_symbol list, or N-k if less available.
+        '''
+        try:
+            bars_list = self.get_latest_bars(ticker, N)
+        except KeyError:
+            print('That ticker is not available in the historical dataset.')
+            raise
+        else:
+            return np.array([getattr(b[1], val_type) for b in bars_list])
+
+    def update_bars(self):
+        '''
+        Pushes latest bar to the latest_ticker_data structure for all tickers in the ticker list.
+        '''
+        for s in self.ticker_list:
+            try:
+                bar = next(self._get_new_bar(s))
+            except StopIteration:
+                self.continue_backtest = False
+            else:
+                if bar is not None:
+                    self.latest_ticker_data[s].append(bar)
+
+        # self.events.put(MarketEvent())
+
+# TODO: Work on this
+class TDADataHandler(DataHandler):
+    def __init__(self, client):
+        self.client = client
+        
+
+
+        self.client.set_enforce_enums(False)
+
+    def get_latest_bar(self, ticker):
+        pass
+
+    def get_latest_bars(self, ticker, N=1):
+        pass
+
+    def get_latest_bar_value(self, ticker, val_type):
+        pass
+
+    def get_latest_bars_values(self, ticker, val_type, N=1):
+        pass
+
+    def update_bars(self):
+        pass
+    
 
 def get_fundamental(client, symbols):
     response = client.search_instruments(symbols, 'fundamental').json()
