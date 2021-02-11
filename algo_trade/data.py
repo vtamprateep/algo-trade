@@ -159,7 +159,6 @@ class HistoricCSVDataHandler(DataHandler):
 
         # self.events.put(MarketEvent())
 
-# TODO: Work on this
 class TDADataHandler(DataHandler):
     '''
     Designed to take a TDA client and allow the user to pull data via the API using the tda-api Python library.
