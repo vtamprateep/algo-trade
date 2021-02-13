@@ -2,7 +2,7 @@ from __future__ import print_function
 from math import floor
 
 from event import FillEvent, OrderEvent
-from utilities import *
+from utilities import create_drawdowns, create_sharpe_ratio
 
 import datetime
 import queue
