@@ -37,7 +37,7 @@ def create_drawdowns(pnl):
 
     return drawdown, drawdown.max(), duration.max()
 
-# TODO: Under development
+# TODO: Under development - American/European? Dividends?
 def black_scholes(stock_price, strike_price, time, rf, div, volatility, option_type):
     '''
     Calculates option prices for European calls/puts using the Black-Scholes formula.
