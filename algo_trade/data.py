@@ -168,9 +168,9 @@ class TDADataHandler(DataHandler):
     '''
     def __init__(self, client, ticker_list):
         self.client = client
-        self.client.set_enforce_enums(False)
         self.ticker_list = ticker_list
 
+        self.client.set_enforce_enums(enforce_enums=False)
         self.ticker_data = dict()
         self.latest_ticker_data = dict()
         self.continue_backtest = True
@@ -277,18 +277,27 @@ class TDADataHandler(DataHandler):
         else:
             return np.array([getattr(b[1], val_type) for b in bars_list])
 
+    def get_current_quote(self):
+        response = self.client.get_quotes(self.ticker_list).json()
+        entries = dict()
+
+        for t in self.ticker_list:
+            entries[t] = response[t]['lastPrice']
+            
+        return entries
+
     def update_bars(self):
         '''
         Pushes latest bar to the latest_ticker_data structure for all tickers in the ticker list.
         '''
-        for s in self.ticker_list:
+        for t in self.ticker_list:
             try:
-                bar = next(self._get_new_bar(s))
+                bar = next(self._get_new_bar(t))
             except StopIteration:
                 self.continue_backtest = False
             else:
                 if bar is not None:
-                    self.latest_ticker_data[s].append(bar)
+                    self.latest_ticker_data[t].append(bar)
 
         # self.events.put(MarketEvent())
     
