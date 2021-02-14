@@ -10,10 +10,10 @@ def create_sharpe_ratio(returns, periods=252, rf=0):
     '''
     Create Sharpe ratio for the strategy, based on a benchmark of zero (i.e. no risk-free rate information).
 
-    :param returns: A pandas Series representing period percentage returns
+    :param returns: A pandas Series representing period percentage returns.
     :param periods: Daily (252), Hourly (252 * 6.5), Minutely (252 * 6.5 * 60), etc.
     '''
-    return np.sqrt(periods) * (np.mean(returns - rf)) / np.std(returns - rf)
+    return np.sqrt(periods) * (np.mean(returns - rf/periods)) / np.std(returns - rf/periods)
 
 def create_drawdowns(pnl):
     '''
@@ -37,9 +37,21 @@ def create_drawdowns(pnl):
 
     return drawdown, drawdown.max(), duration.max()
 
+# TODO: Under development
 def black_scholes(stock_price, strike_price, time, rf, div, volatility, option_type):
+    '''
+    Calculates option prices for European calls/puts using the Black-Scholes formula.
+
+    :param stock_price: Current stock price
+    :param strike_price: Strike price of the option to be priced
+    :param time: Days until option expiry
+    :param rf: Risk-free rate
+    :param div: Dividend yield of the stock
+    :param option_type: CALL or PUT
+    '''
     d1 = (math.log(float(stock_price)/strike_price) + ((rf - div) + volatility * volatility / 2) * time) / (volatility * math.sqrt(time))
     d2 = d1 - volatility * math.sqrt(time)
+
     if option_type == 'call':
         return stock_price * math.exp(-div * time) * stats.norm.cdf(d1) - strike_price * math.exp(-rf * time) * stats.norm.cdf(d2)
     else:
