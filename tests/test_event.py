@@ -1,26 +1,22 @@
-from order import Order, OrderBuilder
-from unittest.mock import Mock, call
 from tda.orders import equities
 
 import unittest
 import pandas as pd
 import numpy as np
 
+from event import OrderEvent, OrderBuilder
 
-class TestOrder(unittest.TestCase):
+
+class TestOrderEvent(unittest.TestCase):
+    def setUp(self):
+        self.order1 = OrderEvent('MSFT', 5, 'BUY', 'MARKET')
+        self.order2 = OrderEvent('MSFT', 5, 'BUY', 'MARKET')
+        self.order3 = OrderEvent('GOOG', 5, 'BUY', 'LIMIT', 500)
+
     def test_order(self):
-        order1 = Order('MSFT', 5, 'BUY', 'MARKET')
-        order2 = Order('MSFT', 5, 'BUY', 'MARKET')
-        order3 = Order('GOOG', 5, 'BUY', 'LIMIT', 500)
-
-        self.assertEqual(order1, order2)
-        self.assertNotEqual(order1, order3)
-        self.assertNotEqual(order2, order3)
-
-        with self.assertRaises(AssertionError) as err:
-            Order('MSFT', 0, 'BUY', 'MARKET')
-            Order('MSFT', -5, 'SELL', 'MARKET')
-            Order('GOOG', 10, 'BUY', 'LIMIT')
+        self.assertEqual(self.order1, self.order2)
+        self.assertNotEqual(self.order1, self.order3)
+        self.assertNotEqual(self.order2, self.order3)
 
 class TestOrderBuilder(unittest.TestCase):
     def setUp(self):
@@ -56,9 +52,9 @@ class TestOrderBuilder(unittest.TestCase):
 
     def test_build_order(self):
         order_book = self.test_order_builder.build_order(10000, self.price, self.tar_state3)
-        self.assertIn(Order('SPY', 25, 'BUY', 'MARKET'), order_book)
-        self.assertIn(Order('IWM', 25, 'BUY', 'MARKET'), order_book)
+        self.assertIn(OrderEvent('SPY', 25, 'BUY', 'MARKET'), order_book)
+        self.assertIn(OrderEvent('IWM', 25, 'BUY', 'MARKET'), order_book)
 
         self.test_order_builder.build_order(10000, self.price, self.tar_state2, self.tar_state3)
-        self.assertIn(Order('SPY', 25, 'SELL', 'MARKET'), order_book)
-        self.assertIn(Order('IWM', 75, 'BUY', 'MARKET'), order_book)
+        self.assertIn(OrderEvent('SPY', 25, 'SELL', 'MARKET'), order_book)
+        self.assertIn(OrderEvent('IWM', 75, 'BUY', 'MARKET'), order_book)
