@@ -6,7 +6,7 @@ with open('README.md', 'r', encoding='utf-8') as fh:
 
 setuptools.setup(
     name='algo_trade',
-    version='0.1.4',
+    version='0.2.3',
     author='Vinyou Tamprateep',
     description='Small package to test and implement portfolio trading algorithms',
     long_description=long_description,
@@ -23,6 +23,6 @@ setuptools.setup(
         'tda-api',
         'pandas',
         'numpy',
-        'python-crontab',
+        'yfinance',
     ]
 )

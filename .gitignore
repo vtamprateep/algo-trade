@@ -8,3 +8,4 @@ algo_trade.egg-info
 src/temp_token
 src/test_strat.py
 test_strategy
+pyproject.toml

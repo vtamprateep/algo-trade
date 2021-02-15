@@ -1,8 +1,4 @@
-from dataclasses import dataclass, field
-from tda.orders import equities
-
-import pandas as pd
-import json
+from dataclasses import dataclass
 
 
 class Event(object):
@@ -86,6 +82,14 @@ class OrderBuilder:
         self.order_book = set()
 
     def _create_order(self, ticker, quantity, action, order_type):
+        '''
+        Creates OrderEvent objects and adds them to the order_book set.
+
+        :param ticker: Ticker symbol
+        :param quantity: Number of shares to buy/sell
+        :param action: BUY or SELL
+        :param order_type: MARKET or LIMIT - currently only supports MARKET types
+        '''
         self.order_book.add(
                     OrderEvent(
                         ticker=ticker,
@@ -97,9 +101,12 @@ class OrderBuilder:
         return
 
     def _rebalance(self, tar_state, cur_state):
-        assert 0 <= tar_state['weight'].sum() <= 1, Exception('Invalid portfolio weights')
-        assert 0 <= cur_state['weight'].sum() <= 1, Exception('Invalid portfolio weights')
+        '''
+        Calculates the difference between tar_state and cur_state portfolios, returning how much each asset is under/over-weight
 
+        :param tar_state: Pandas DataFrame of target asset weights in decimals
+        :param cur_state: Pandas DataFrame of current asset weights in decimals
+        '''
         join_df = cur_state.merge(
             tar_state,
             how='outer',
@@ -118,10 +125,15 @@ class OrderBuilder:
 
         return rebalance_df.reset_index(drop=True)
 
-    def build_order(self, balance: int, price: dict, tar_df, cur_df = None):
-        assert balance > 0, Exception('Invalid balance')
-        self.order_book.clear()
+    def build_order(self, balance, price, tar_df, cur_df = None):
+        '''
+        Returns set of OrderEvents created from current TDA account balances and target asset weights. If cur_df provided, will generate BUY and SELL orders accordingly to rebalance portfolio.
 
+        :param balance: Float value of current account balance
+        :param price: Dictionary of relevant ticker prices - should include all unique tickers present in tar_df and cur_df
+        :param tar_df: Pandas DataFrame of target asset weights in decimals
+        :param cur_df: Pandas DataFrame of current asset weights in decimals
+        '''
         if cur_df is not None:
             tar_df = self._rebalance(tar_df, cur_df)
 

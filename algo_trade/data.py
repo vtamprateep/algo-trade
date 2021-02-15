@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from event import MarketEvent
+from algo_trade.event import MarketEvent
 
 class DataHandler(object):
     '''
@@ -176,8 +176,6 @@ class TDADataHandler(DataHandler):
         self.latest_ticker_data = dict()
         self.continue_backtest = True
 
-        self.data = None
-
     def get_data(self, period_type = 'year', period = 1, frequency_type = 'daily', frequency = 1):
         '''
         Returns dataframe dictionary of historical prices for a list of tickers
@@ -278,9 +276,16 @@ class TDADataHandler(DataHandler):
         else:
             return np.array([getattr(b[1], val_type) for b in bars_list])
 
-    def get_current_quote(self):
-        response = self.client.get_quotes(self.ticker_list).json()
+    def get_current_quotes(self, ticker_list):
+        '''
+        Returns dictionary of last ticker prices. If input is none, defaults to self.ticker_list created at DataHandler class instantiation.
+        '''
         entries = dict()
+        if ticker_list is None:
+            response = self.client.get_quotes(self.ticker_list).json()
+        else:
+            response = self.client.get_quotes(ticker_list).json()
+        
 
         for t in self.ticker_list:
             entries[t] = response[t]['lastPrice']

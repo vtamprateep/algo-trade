@@ -1,12 +1,12 @@
 from __future__ import print_function
 
-from event import FillEvent, OrderEvent
-from utilities import create_drawdowns, create_sharpe_ratio
-
 import datetime
 import queue
 import numpy as np
 import pandas as pd
+
+from algo_trade.event import FillEvent, OrderEvent
+from algo_trade.utilities import create_drawdowns, create_sharpe_ratio
 
 
 class Portfolio:

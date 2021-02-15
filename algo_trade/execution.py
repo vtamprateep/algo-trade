@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 import datetime
 import queue
 
-from event import FillEvent, OrderEvent
+from algo_trade.event import FillEvent, OrderEvent
 from tda.orders import equities
 
 

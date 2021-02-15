@@ -2,4 +2,4 @@ tda-api
 pandas
 numpy
 scipy
-Python-crontab
+yfinance
