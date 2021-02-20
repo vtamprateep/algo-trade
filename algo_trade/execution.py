@@ -60,6 +60,7 @@ class TDAExecutionHandler(ExecutionHandler):
         self.events = events
 
         self.client.set_enforce_enums(enforce_enums=False)
+        self.order_book = set()
 
     def _create_order(self, ticker, quantity, action, order_type, limit=None):
         '''
@@ -81,32 +82,36 @@ class TDAExecutionHandler(ExecutionHandler):
                 )
         return
 
-    def _calculate_weight_change(self, tar_state, cur_state):
+    def _calculate_weight_change(self, target, current):
         '''
         Calculates the difference between tar_state and cur_state portfolios, returning how much each asset is under/over-weight
 
         :param tar_state: Pandas DataFrame of target asset weights in decimals
         :param cur_state: Pandas DataFrame of current asset weights in decimals
         '''
-        join_df = cur_state.merge(
-            tar_state,
-            how='outer',
-            on='ticker',
-            suffixes=('_current', '_target'),
-        ).fillna(0)
+        diff_dict = dict()
 
-        join_df['weight'] = (join_df['weight_target'] - join_df['weight_current'])
-        rebalance_df = join_df[['ticker', 'weight']]
+        # Get difference from current holdings to target holdings
+        for k, v in current.iteritems():
+            if k not in target:
+                diff_dict[k] = -1 * v
+            else:
+                diff_dict[k] = v - target[k]
+
+        # Check for new asset holdings in target
+        for k, v in target.iteritems():
+            if k not in current:
+                diff_dict[k] = v
         
         # Drop cash component
-        try:
-            rebalance_df = rebalance_df[rebalance_df['ticker'] != 'MMDA1']
-        except:
-            pass
+        diff_dict.pop('MMDA1', None)
 
-        return rebalance_df.reset_index(drop=True)
+        return diff_dict
 
     def _submitBuy(self, event):
+        '''
+        Takes OrderEvent and submits a BUY order to the TDA account
+        '''
         if event.order_type == 'MARKET':
             self.client.place_order(
                 self.ACC_ID,
@@ -128,6 +133,9 @@ class TDAExecutionHandler(ExecutionHandler):
             raise Exception('Invalid BUY order.')
 
     def _submitSell(self, event):
+        '''
+        Takes OrderEvent and submits a SELL order to the TDA account
+        '''
         if event.order_type == 'MARKET':
             self.client.place_order(
                 self.ACC_ID,
@@ -148,29 +156,34 @@ class TDAExecutionHandler(ExecutionHandler):
         else:
             raise Exception('Invalid SELL order.')
 
-    def rebalance(self, balance, price, tar_df, cur_df = None):
+    def rebalance(self, balance, price, target, current = None):
         '''
         Returns set of OrderEvents created from current TDA account balances and target asset weights. If cur_df provided, will generate BUY and SELL orders accordingly to rebalance portfolio.
 
         :param balance: Float value of current account balance
         :param price: Dictionary of relevant ticker prices - should include all unique tickers present in tar_df and cur_df
-        :param tar_df: Pandas DataFrame of target asset weights in decimals
-        :param cur_df: Pandas DataFrame of current asset weights in decimals
+        :param tar_df: Dictionary of target asset weights in decimals
+        :param cur_df: Dictionary of current asset weights in decimals
         '''
-        if cur_df is not None:
-            tar_df = self._calculate_weight_change(tar_df, cur_df)
 
-        for _, row in tar_df.iterrows():
-            quantity = int(row['weight'] * balance / price[row['ticker']])
+
+        if current is not None:
+            target = self._calculate_weight_change(target, current)
+
+        for k, v in target.iteritems():
+            quantity = int(v * balance / price[k])
 
             if quantity > 0:
-                self._create_order(row['ticker'], quantity, 'BUY', 'MARKET')
+                self._create_order(k, quantity, 'BUY', 'MARKET')
             elif quantity < 0:
-                self._create_order(row['ticker'], abs(quantity), 'SELL', 'MARKET')
+                self._create_order(k, abs(quantity), 'SELL', 'MARKET')
 
         return self.order_book
 
     def execute_order(self, event):
+        '''
+        Virtual method - takes OrderEvent and calls self._submitBuy() and self._submitSell() in accordance to the order type
+        '''
         if event.action == 'BUY':
             self._submitBuy(event)
 
