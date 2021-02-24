@@ -2,7 +2,6 @@ from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 
 import datetime
-import queue
 
 from algo_trade.event import FillEvent, OrderEvent
 from tda.orders import equities
@@ -59,9 +58,53 @@ class TDAExecutionHandler(ExecutionHandler):
         self.ACC_ID = acc_id
         self.events = events
 
-        self.client.set_enforce_enums(enforce_enums=False)
+    def _create_order(self, ticker, quantity, action, order_type, limit=None):
+        '''
+        Creates OrderEvent objects and adds them to the order_book set.
+
+        :param ticker: Ticker symbol
+        :param quantity: Number of shares to buy/sell
+        :param action: BUY or SELL
+        :param order_type: MARKET or LIMIT - currently only supports MARKET types
+        '''
+        return OrderEvent(
+            ticker=ticker,
+            quantity=quantity,
+            action=action,
+            order_type=order_type,
+            limit=limit,
+        )
+
+    def _calculate_weight_change(self, target, current):
+        '''
+        Calculates the difference between tar_state and cur_state portfolios, returning how much each asset is under/over-weight
+
+        :param tar_state: Pandas DataFrame of target asset weights in decimals
+        :param cur_state: Pandas DataFrame of current asset weights in decimals
+        '''
+        diff_dict = dict()
+
+        # Get difference from current holdings to target holdings
+        for k, v in current.items():
+            if k not in target:
+                diff_dict[k] = -1 * v
+            else:
+                diff_dict[k] = target[k] - v
+
+        # Check for new asset holdings in target
+        for k, v in target.items():
+            if k not in current:
+                diff_dict[k] = v
+        
+        # Drop cash component
+        diff_dict.pop('MMDA1', None)
+
+        return diff_dict
 
     def _submitBuy(self, event):
+        '''
+        Takes OrderEvent and submits a BUY order to the TDA account
+        '''
         if event.order_type == 'MARKET':
             self.client.place_order(
                 self.ACC_ID,
@@ -83,6 +126,9 @@ class TDAExecutionHandler(ExecutionHandler):
             raise Exception('Invalid BUY order.')
 
     def _submitSell(self, event):
+        '''
+        Takes OrderEvent and submits a SELL order to the TDA account
+        '''
         if event.order_type == 'MARKET':
             self.client.place_order(
                 self.ACC_ID,
@@ -103,7 +149,39 @@ class TDAExecutionHandler(ExecutionHandler):
         else:
             raise Exception('Invalid SELL order.')
 
+    def rebalance(self, balance, price, target, current = None):
+        '''
+        Returns set of OrderEvents created from current TDA account balances and target asset weights. If cur_df provided, will generate BUY and SELL orders accordingly to rebalance portfolio.
+
+        :param balance: Float value of current account balance
+        :param price: Dictionary of relevant ticker prices - should include all unique tickers present in target and current
+        :param tar_df: Dictionary of target asset weights in float
+        :param cur_df: Dictionary of current asset weights in float
+        '''
+        order_book = set()
+
+        if current is not None:
+            target = self._calculate_weight_change(target, current)
+
+        for k, v in target.items():
+            quantity = int(v * balance / price[k])
+
+            print(type(k), k)
+
+            if k == 'MMDA1':
+                continue
+
+            if quantity > 0:
+                order_book.add( self._create_order(k, quantity, 'BUY', 'MARKET') )
+            elif quantity < 0:
+                order_book.add( self._create_order(k, abs(quantity), 'SELL', 'MARKET') )
+
+        return order_book
+
     def execute_order(self, event):
+        '''
+        Virtual method - takes OrderEvent and calls self._submitBuy() and self._submitSell() in accordance to the order type
+        '''
         if event.action == 'BUY':
             self._submitBuy(event)
 

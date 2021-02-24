@@ -1,7 +1,5 @@
 from abc import ABCMeta, abstractmethod
 
-import pandas as pd
-
 
 class AccountClient(object):
     '''
@@ -46,32 +44,34 @@ class TDAAccountClient(AccountClient):
     def order(self):
         response = self.client.get_account(self.ACC_ID, fields=['orders']).json()
         book = response['securitiesAccount']['orderStrategies']
-        entries = list()
+        order_book = list()
 
         for order in book:
-            entries.append([
-                order['orderLegCollection'][0]['instrument']['symbol'],
-                order['quantity'],
-                order['orderLegCollection'][0]['instruction'],
-                order['orderType'],
-                order['price'],
-                order['status'],
-            ])
+            order_book.append(
+                {
+                    'ticker': order['orderLegCollection'][0]['instrument']['symbol'],
+                    'quantity': order['quantity'],
+                    'instruction': order['orderLegCollection'][0]['instruction'],
+                    'order_type': order['orderType'],
+                    'price': order['price'],
+                    'status': order['status'],
+                }
+            )
 
-        return pd.DataFrame(data = entries, columns = ['ticker', 'quantity', 'action', 'order_type', 'limit', 'status'])
+        return order_book
     
     @property
     def position(self):
         response = self.client.get_account(self.ACC_ID, fields=['positions']).json()
         positions = response['securitiesAccount']['positions']
-        entries = list()
+        entries = dict()
+        total_balance = 0
 
         for instr in positions:
-            entries.append(
-                [instr['instrument']['symbol'], instr['marketValue']]
-            )
+            entries[instr['instrument']['symbol']] = instr['marketValue']
+            total_balance += instr['marketValue']
 
-        position_df = pd.DataFrame(data = entries, columns = ['ticker', 'weight'])
-        position_df['weight'] = position_df['weight'] / self.balance
+        for ticker in entries:
+            entries[ticker] /= total_balance
 
-        return position_df    
+        return entries
