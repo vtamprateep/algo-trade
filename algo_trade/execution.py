@@ -2,7 +2,6 @@ from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 
 import datetime
-import queue
 
 from algo_trade.event import FillEvent, OrderEvent
 from tda.orders import equities
@@ -59,9 +58,6 @@ class TDAExecutionHandler(ExecutionHandler):
         self.ACC_ID = acc_id
         self.events = events
 
-        self.client.set_enforce_enums(enforce_enums=False)
-        self.order_book = set()
-
     def _create_order(self, ticker, quantity, action, order_type, limit=None):
         '''
         Creates OrderEvent objects and adds them to the order_book set.
@@ -71,16 +67,13 @@ class TDAExecutionHandler(ExecutionHandler):
         :param action: BUY or SELL
         :param order_type: MARKET or LIMIT - currently only supports MARKET types
         '''
-        self.order_book.add(
-                    OrderEvent(
-                        ticker=ticker,
-                        quantity=quantity,
-                        action=action,
-                        order_type=order_type,
-                        limit=limit
-                    )
-                )
-        return
+        return OrderEvent(
+            ticker=ticker,
+            quantity=quantity,
+            action=action,
+            order_type=order_type,
+            limit=limit,
+        )
 
     def _calculate_weight_change(self, target, current):
         '''
@@ -92,14 +85,14 @@ class TDAExecutionHandler(ExecutionHandler):
         diff_dict = dict()
 
         # Get difference from current holdings to target holdings
-        for k, v in current.iteritems():
+        for k, v in current.items():
             if k not in target:
                 diff_dict[k] = -1 * v
             else:
-                diff_dict[k] = v - target[k]
+                diff_dict[k] = target[k] - v
 
         # Check for new asset holdings in target
-        for k, v in target.iteritems():
+        for k, v in target.items():
             if k not in current:
                 diff_dict[k] = v
         
@@ -161,24 +154,29 @@ class TDAExecutionHandler(ExecutionHandler):
         Returns set of OrderEvents created from current TDA account balances and target asset weights. If cur_df provided, will generate BUY and SELL orders accordingly to rebalance portfolio.
 
         :param balance: Float value of current account balance
-        :param price: Dictionary of relevant ticker prices - should include all unique tickers present in tar_df and cur_df
-        :param tar_df: Dictionary of target asset weights in decimals
-        :param cur_df: Dictionary of current asset weights in decimals
+        :param price: Dictionary of relevant ticker prices - should include all unique tickers present in target and current
+        :param tar_df: Dictionary of target asset weights in float
+        :param cur_df: Dictionary of current asset weights in float
         '''
-
+        order_book = set()
 
         if current is not None:
             target = self._calculate_weight_change(target, current)
 
-        for k, v in target.iteritems():
+        for k, v in target.items():
             quantity = int(v * balance / price[k])
 
-            if quantity > 0:
-                self._create_order(k, quantity, 'BUY', 'MARKET')
-            elif quantity < 0:
-                self._create_order(k, abs(quantity), 'SELL', 'MARKET')
+            print(type(k), k)
 
-        return self.order_book
+            if k == 'MMDA1':
+                continue
+
+            if quantity > 0:
+                order_book.add( self._create_order(k, quantity, 'BUY', 'MARKET') )
+            elif quantity < 0:
+                order_book.add( self._create_order(k, abs(quantity), 'SELL', 'MARKET') )
+
+        return order_book
 
     def execute_order(self, event):
         '''
