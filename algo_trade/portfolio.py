@@ -15,9 +15,9 @@ class Portfolio:
 
     The holdings DataFrame stores the cash and total market holdings value of each symbol for a particular time-index, as well as the percentage change in portfolio total across bars.
 
-    :param bars:    The DataHandler object with current market data
-    :param events:  The Event queue object
-    :param start_date:  The start date (bar) of the portfolio
+    :param bars: The DataHandler object with current market data
+    :param events: The Event queue object
+    :param start_date: The start date (bar) of the portfolio
     :param initial_capital: The starting capital in USD
     '''
     def __init__(self, bars, events, start_date, initial_capital=100000.0):

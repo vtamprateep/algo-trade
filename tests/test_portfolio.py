@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import unittest
 
-import portfolio
+import algo_trade.portfolio
 
 
 class TestModuleFunction(unittest.TestCase):

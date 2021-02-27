@@ -65,7 +65,7 @@ class HistoricCSVDataHandler(DataHandler):
                 names=[
                     'datetime', 'open', 'high', 'low', 'close', 'volume', 'adj_close'
                 ]
-            ).sort()
+            ).sort_values()
 
             if comb_index is None:
                 comb_index = self.ticker_data[t].index_col
