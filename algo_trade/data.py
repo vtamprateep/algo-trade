@@ -65,17 +65,17 @@ class HistoricCSVDataHandler(DataHandler):
                 names=[
                     'datetime', 'open', 'high', 'low', 'close', 'volume', 'adj_close'
                 ]
-            ).sort_values()
+            ).sort_index()
 
             if comb_index is None:
-                comb_index = self.ticker_data[t].index_col
+                comb_index = self.ticker_data[t].index
             else:
                 comb_index.union(self.ticker_data[t].index)
 
             self.latest_ticker_data[t] = []
 
         for t in self.ticker_list:
-            self.ticker_data[t] = self.ticker_data[t].reindex(index=comb_index, method='pad').iterrows()
+            self.ticker_data[t] = self.ticker_data[t].reindex(index=comb_index, method='pad')
 
     def _get_new_bar(self, ticker):
         '''
