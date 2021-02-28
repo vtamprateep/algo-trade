@@ -40,16 +40,19 @@ class HistoricCSVDataHandler(DataHandler):
     :param csv_dir: Absolute directory path to CSV files
     :param ticker_list: List of ticker strings
     '''
-    def __init__(self, events, csv_dir, ticker_list):
+    def __init__(self, events, csv_dir, ticker_list, test=False):
         self.events = events
         self.csv_dir = csv_dir
         self.ticker_list = ticker_list
 
         self.ticker_data = dict()
         self.latest_ticker_data = dict()
+        self.ticker_generator = dict()
+        
         self.continue_backtest = True
 
-        self._open_convert_csv_files()
+        if not test:
+            self._open_convert_csv_files()
 
     def _open_convert_csv_files(self):
         '''
@@ -76,13 +79,13 @@ class HistoricCSVDataHandler(DataHandler):
 
         for t in self.ticker_list:
             self.ticker_data[t] = self.ticker_data[t].reindex(index=comb_index, method='pad')
+            self.ticker_generator[t] = self.ticker_data[t].iterrows()
 
     def _get_new_bar(self, ticker):
         '''
         Returns latest bar from the data feed.
         '''
-        for b in self.ticker_data[ticker]:
-            yield b
+        return next(self.ticker_generator[ticker])
 
     def get_latest_bar(self, ticker):
         '''
@@ -148,14 +151,14 @@ class HistoricCSVDataHandler(DataHandler):
         '''
         Pushes latest bar to the latest_ticker_data structure for all tickers in the ticker list.
         '''
-        for s in self.ticker_list:
+        for t in self.ticker_list:
             try:
-                bar = next(self._get_new_bar(s))
+                bar = self._get_new_bar(t)
             except StopIteration:
                 self.continue_backtest = False
             else:
                 if bar is not None:
-                    self.latest_ticker_data[s].append(bar)
+                    self.latest_ticker_data[t].append((bar[0], bar[1]))
 
         self.events.put(MarketEvent())
 
