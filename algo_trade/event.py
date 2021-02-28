@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 
 class Event(object):
@@ -7,6 +8,7 @@ class Event(object):
     '''
     pass
 
+@dataclass(frozen=True)
 class FillEvent(Event):
     '''
     Encapsulates notion of a filled order, as returned from a brokerage. Stores quantity of an instrument actually filled and at what price. In addition, stores the commission of the trade from the brokerage.
@@ -19,15 +21,14 @@ class FillEvent(Event):
     :param fill_cost: Holdings value in dollars
     :param commission: Optional commission sent from broker
     '''
-    def __init__(self, timeindex, ticker, exchange, quantity, direction, fill_cost, commission=0):
-        self.type = 'FILL'
-        self.timeindex = timeindex
-        self.ticker = ticker
-        self.exchange = exchange
-        self.quantity = quantity
-        self.direction = direction
-        self.fill_cost = fill_cost
-        self.commission = commission
+    timeindex: datetime
+    ticker: str
+    exchange: str
+    quantity: int
+    direction: str
+    fill_cost: float
+    commission: float = 0.0
+    type: str = 'FILL'
 
 class MarketEvent(Event):
     '''
@@ -52,8 +53,8 @@ class OrderEvent(Event):
     quantity: int
     action: str
     trade_type: str
-    type: str = 'ORDER'
     limit: float = None
+    type: str = 'ORDER'
 
 class SignalEvent(Event):
     '''
@@ -63,13 +64,13 @@ class SignalEvent(Event):
     :param strategy_id: Unique identifier for the strategy that generated the signal.
     :param ticker: Ticker symbol.
     :param datetime: Timestamp which signal was generated
-    :param signal_type: 'LONG' or 'SHORT'
+    :param signal_type: 'LONG', 'SHORT' or 'EXIT'
     :param strength: Adjustment factor "suggestion" used to scale quantity at the portfolio level
     '''
     def __init__(self, strategy_id, ticker, datetime, signal_type, strength):
-        self.type = 'SIGNAL'
         self.strategy_id = strategy_id
         self.ticker = ticker
         self.datetime = datetime
         self.signal_type = signal_type
         self.strength = strength
+        self.type = 'SIGNAL'

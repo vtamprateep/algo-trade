@@ -1,11 +1,36 @@
 from unittest.mock import Mock
+from queue import Queue
 
 import unittest
-import queue
+import datetime
 
-from algo_trade.execution import TDAExecutionHandler
-from algo_trade.event import OrderEvent
+from algo_trade.execution import TDAExecutionHandler, SimulatedExecutionHandler
+from algo_trade.event import FillEvent, OrderEvent
 
+
+class TestSimulatedExecutionHandler(unittest.TestCase):
+    def setUp(self):
+        self.test_queue = Queue()
+        self.test_handler = SimulatedExecutionHandler(self.test_queue)
+        self.test_order = OrderEvent('SPY', 10, 'BUY', 'MARKET')
+        self.test_fill = FillEvent(
+            timeindex=datetime.datetime.utcnow(),
+            ticker='SPY',
+            exchange='ARCA',
+            quantity=10,
+            direction='BUY',
+            fill_cost=None,
+        )
+
+    def test_execute_order(self):
+        self.test_handler.execute_order(self.test_order)
+        output_fill = self.test_queue.get()
+
+        self.assertEqual(output_fill.ticker, self.test_fill.ticker)
+        self.assertEqual(output_fill.exchange, self.test_fill.exchange)
+        self.assertEqual(output_fill.quantity, self.test_fill.quantity)
+        self.assertEqual(output_fill.direction, self.test_fill.direction)
+        self.assertEqual(output_fill.fill_cost, self.test_fill.fill_cost)
 
 class TestTDAExecutionHandler(unittest.TestCase):
     def setUp(self):

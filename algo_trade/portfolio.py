@@ -1,11 +1,9 @@
 from __future__ import print_function
 
-import datetime
-import queue
 import numpy as np
 import pandas as pd
 
-from algo_trade.event import FillEvent, OrderEvent
+from algo_trade.event import OrderEvent
 from algo_trade.utilities import create_drawdowns, create_sharpe_ratio
 
 
@@ -30,13 +28,15 @@ class Portfolio:
         self.start_date = start_date
         self.initial_capital = initial_capital
 
-        self.all_positions = self.construct_all_holdings()
-        self.current_positions = dict( (k,v) for k, v in [(t,0) for t in self.ticker_list] )
+        self.all_positions = self._construct_all_positions()
+        self.current_positions = self._construct_current_positions()
+        self.all_holdings = self._construct_all_holdings()
+        self.current_holdings = self._construct_current_holdings()
 
-        self.all_holdings = self.construct_all_holdings()
-        self.current_holdings = self.construct_current_holdings()
+    ##################################################
+    # Initialization methods
 
-    def construct_all_positions(self):
+    def _construct_all_positions(self):
         '''
         Constructs the positions list using the start_date to determine when the time index will begin
         '''
@@ -44,7 +44,7 @@ class Portfolio:
         d['datetime'] = self.start_date
         return [d]
 
-    def construct_all_holdings(self):
+    def _construct_all_holdings(self):
         '''
         Constructs the holdings list using the start_date to determine when the time index will begin
         '''
@@ -55,7 +55,14 @@ class Portfolio:
         d['total'] = self.initial_capital
         return [d]
 
-    def construct_current_holdings(self):
+    def _construct_current_positions(self):
+        '''
+        Constructs the dictionary which will hold the instantaneous positions of the portfolio across all symbols
+        '''
+        d = dict( (k,v) for k, v in [(t,0) for t in self.ticker_list] )
+        return d
+
+    def _construct_current_holdings(self):
         '''
         Constructs the dictionary which will hold the instantaneous value of the portfolio across all symbols
         '''
@@ -64,6 +71,9 @@ class Portfolio:
         d['commission'] = 0.0
         d['total'] = self.initial_capital
         return d
+
+    ##################################################
+    # Pre-open preparation for trading session
 
     def update_timeindex(self, event):
         '''
@@ -99,8 +109,10 @@ class Portfolio:
         # Append current holdings
         self.all_holdings.append(dh)
 
-    # Only used by self.update_fill() - consider making private
-    def update_positions_from_fill(self, fill):
+    ##################################################
+    # Update holdings/positions from FillEvent methods
+
+    def _update_positions_from_fill(self, fill):
         '''
         Takes a FillEvent object and updates position matrix to reflect the new position.
         '''
@@ -112,8 +124,7 @@ class Portfolio:
 
         self.current_positions[fill.ticker] += fill_dir * fill.quantity
 
-    # Only used by self.update_fill() - consider making private
-    def update_holdings_from_fill(self, fill):
+    def _update_holdings_from_fill(self, fill):
         '''
         Takes a FillEvent object and updates holdings matrix to reflect the new holdings value.
         '''
@@ -128,26 +139,30 @@ class Portfolio:
         self.current_holdings[fill.ticker] += cost
         self.current_holdings['commission'] += fill.commission
         self.current_holdings['cash'] -= (cost + fill.commission)
-        self.current_holdings['total'] -= (cost + fill.commission)
+        self.current_holdings['total'] -= fill.commission
 
     def update_fill(self, event):
         '''
         Updates the portfolio current positions and holdings from a FillEvent.
         '''
         if event.type == 'FILL':
-            self.update_positions_from_fill(event)
-            self.update_holdings_from_fill(event)
+            self._update_positions_from_fill(event)
+            self._update_holdings_from_fill(event)
 
-    # Only used by self.update_signal() - consider making private
-    def generate_naive_order(self, signal):
+    ##################################################
+    # Signal Digestion/Order Creation
+
+    def _generate_naive_order(self, signal):
         '''
-        Files an Order object as a constant quantity sizing of the signal object, without risk anagement or position sizing considerations.
+        Files an Order object as a constant quantity sizing of the signal object, without risk management or position sizing considerations.
         '''
         order = None
 
         ticker = signal.ticker
         direction = signal.signal_type
         strength = signal.strength
+
+        print(ticker, direction, strength)
 
         mkt_quantity = 100
         cur_quantity = self.current_positions[ticker]
@@ -170,8 +185,11 @@ class Portfolio:
         Acts on a SignalEvent to generate new orders based on the portfolio logic.
         '''
         if event.type == 'SIGNAL':
-            order_event = self.generate_naive_order(event)
+            order_event = self._generate_naive_order(event)
             self.events.put(order_event)
+
+    ##################################################
+    # Output Backtesting results
 
     def create_equity_curve_dataframe(self):
         '''
