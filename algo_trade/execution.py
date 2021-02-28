@@ -71,7 +71,7 @@ class TDAExecutionHandler(ExecutionHandler):
             ticker=ticker,
             quantity=quantity,
             action=action,
-            order_type=order_type,
+            type=order_type,
             limit=limit,
         )
 
@@ -105,7 +105,7 @@ class TDAExecutionHandler(ExecutionHandler):
         '''
         Takes OrderEvent and submits a BUY order to the TDA account
         '''
-        if event.order_type == 'MARKET':
+        if event.type == 'MARKET':
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_buy_market(
@@ -113,7 +113,7 @@ class TDAExecutionHandler(ExecutionHandler):
                     event.quantity,
                 ),
             )
-        elif event.order_type == 'LIMIT' and event.limit:
+        elif event.type == 'LIMIT' and event.limit:
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_buy_limit(
@@ -129,7 +129,7 @@ class TDAExecutionHandler(ExecutionHandler):
         '''
         Takes OrderEvent and submits a SELL order to the TDA account
         '''
-        if event.order_type == 'MARKET':
+        if event.type == 'MARKET':
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_sell_market(
@@ -137,7 +137,7 @@ class TDAExecutionHandler(ExecutionHandler):
                     event.quantity,
                 ),
             )
-        elif event.order_type == 'LIMIT' and event.limit:
+        elif event.type == 'LIMIT' and event.limit:
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_sell_limit(

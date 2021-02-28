@@ -44,13 +44,13 @@ class OrderEvent(Event):
     :param ticker: Stock symbol
     :param quantity: Number of stocks to buy/sell
     :param action: BUY or SELL
-    :param order_type: MARKET or LIMIT
+    :param type: MARKET or LIMIT
     :param limit: Limit price
     '''
     ticker: str
     quantity: int
     action: str
-    order_type: str
+    type: str
     limit: float = None
 
 class SignalEvent(Event):
