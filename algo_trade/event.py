@@ -19,7 +19,7 @@ class FillEvent(Event):
     :param fill_cost: Holdings value in dollars
     :param commission: Optional commission sent from broker
     '''
-    def __init__(self, timeindex, ticker, exchange, quantity, direction, fill_cost, commission=None):
+    def __init__(self, timeindex, ticker, exchange, quantity, direction, fill_cost, commission=0):
         self.type = 'FILL'
         self.timeindex = timeindex
         self.ticker = ticker
@@ -27,6 +27,7 @@ class FillEvent(Event):
         self.quantity = quantity
         self.direction = direction
         self.fill_cost = fill_cost
+        self.commission = commission
 
 class MarketEvent(Event):
     '''
@@ -50,7 +51,8 @@ class OrderEvent(Event):
     ticker: str
     quantity: int
     action: str
-    type: str
+    trade_type: str
+    type: str = 'ORDER'
     limit: float = None
 
 class SignalEvent(Event):

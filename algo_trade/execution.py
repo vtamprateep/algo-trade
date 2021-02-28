@@ -39,7 +39,7 @@ class SimulatedExecutionHandler(ExecutionHandler):
         '''
         if event.type == 'ORDER':
             fill_event = FillEvent(
-                datetime.datetime.utcnow(), event.ticker, 'ARCA', event.quantity, event.direction, None
+                datetime.datetime.utcnow(), event.ticker, 'ARCA', event.quantity, event.action, None
             )
             self.events.put(fill_event)
 
@@ -58,7 +58,7 @@ class TDAExecutionHandler(ExecutionHandler):
         self.ACC_ID = acc_id
         self.events = events
 
-    def _create_order(self, ticker, quantity, action, order_type, limit=None):
+    def _create_order(self, ticker, quantity, action, trade_type, limit=None):
         '''
         Creates OrderEvent objects and adds them to the order_book set.
 
@@ -71,7 +71,7 @@ class TDAExecutionHandler(ExecutionHandler):
             ticker=ticker,
             quantity=quantity,
             action=action,
-            type=order_type,
+            trade_type=trade_type,
             limit=limit,
         )
 
@@ -105,7 +105,7 @@ class TDAExecutionHandler(ExecutionHandler):
         '''
         Takes OrderEvent and submits a BUY order to the TDA account
         '''
-        if event.type == 'MARKET':
+        if event.trade_type == 'MARKET':
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_buy_market(
@@ -113,7 +113,7 @@ class TDAExecutionHandler(ExecutionHandler):
                     event.quantity,
                 ),
             )
-        elif event.type == 'LIMIT' and event.limit:
+        elif event.trade_type == 'LIMIT' and event.limit:
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_buy_limit(
@@ -129,7 +129,7 @@ class TDAExecutionHandler(ExecutionHandler):
         '''
         Takes OrderEvent and submits a SELL order to the TDA account
         '''
-        if event.type == 'MARKET':
+        if event.trade_type == 'MARKET':
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_sell_market(
@@ -137,7 +137,7 @@ class TDAExecutionHandler(ExecutionHandler):
                     event.quantity,
                 ),
             )
-        elif event.type == 'LIMIT' and event.limit:
+        elif event.trade_type == 'LIMIT' and event.limit:
             self.client.place_order(
                 self.ACC_ID,
                 equities.equity_sell_limit(
