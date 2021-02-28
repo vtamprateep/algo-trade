@@ -174,10 +174,12 @@ class TDADataHandler(DataHandler):
         self.ticker_list = ticker_list
         self.events = events
 
-        self.client.set_enforce_enums(enforce_enums=False)
         self.ticker_data = dict()
         self.latest_ticker_data = dict()
+        self.ticker_generator = dict()
+
         self.continue_backtest = True
+        self.client.set_enforce_enums(enforce_enums=False)
 
     def get_data(self, period_type = 'year', period = 1, frequency_type = 'daily', frequency = 1):
         '''
@@ -198,17 +200,20 @@ class TDADataHandler(DataHandler):
                     columns=['datetime', 'open', 'high', 'low', 'close'],
                 )
             price_history.set_index('datetime', inplace=True)
+
             self.ticker_data[t] = price_history
 
             if comb_index is None:
-                comb_index = self.ticker_data[t].index_col
+                comb_index = self.ticker_data[t].index
             else:
                 comb_index.union(self.ticker_data[t].index)
 
             self.latest_ticker_data[t] = list()
 
         for t in self.ticker_list:
-            self.ticker_data[t] = self.ticker_data[t].reindex(index=comb_index, method='pad').iterrows()
+            self.ticker_data[t] = self.ticker_data[t].reindex(index=comb_index, method='pad')
+            self.ticker_data[t].sort_index(inplace=True)
+            self.ticker_generator[t] = self.ticker_data[t].iterrows()
 
         return self.ticker_data
 
@@ -216,8 +221,7 @@ class TDADataHandler(DataHandler):
         '''
         Returns latest bar from the data feed.
         '''
-        for b in self.ticker_data[ticker]:
-            yield b
+        return next(self.ticker_generator[ticker])
 
     def get_latest_bar(self, ticker):
         '''
@@ -301,11 +305,11 @@ class TDADataHandler(DataHandler):
         '''
         for t in self.ticker_list:
             try:
-                bar = next(self._get_new_bar(t))
+                bar = self._get_new_bar(t)
             except StopIteration:
                 self.continue_backtest = False
             else:
                 if bar is not None:
-                    self.latest_ticker_data[t].append(bar)
+                    self.latest_ticker_data[t].append((bar[0], bar[1]))
 
         self.events.put(MarketEvent())
