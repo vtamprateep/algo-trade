@@ -6,5 +6,5 @@ import datetime
 from algo_trade.backtest import Backtest
 
 
-class TestBacktest(self):
+class TestBacktest(unittest.TestCase):
     pass
