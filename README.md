@@ -8,74 +8,82 @@
 
 ## How Does It Work?
 
-Install the package via `pip install [INSERT PACKAGE NAME HERE]`
+Install the package via `pip install algo-trade`
 
-As `algo_trade` is designed to integrate features of existing Python packages, usage of the package to define and implement trading strategies requires subclassing as well as knowledge of integrated Python packages. The two main classes used are `AccountClient` and `Portfolio`.
+As `algo_trade` is designed to integrate features of existing Python packages, usage of the package to define and implement trading strategies requires subclassing as well as knowledge of integrated Python packages. There are three main classes that allow for account information and trading: `Strategy`, `TDABroker`, and `AccountClient`
 
-`AccountClient` serves as a connection to trading accounts - currently, the only supported client is TDAmeritrade due to their public API and leverages the [`tda-api`](https://github.com/alexgolec/tda-api) Python package. A sample instantiation of the `AccountClient` class can be seen below:
+`Strategy` is the base strategy class that should be subclassed when defining and instantiating a strategy. As of now, `Strategy` subclasses should only output two types of objects: (1) A dictionary containing target asset weights and (2) `OrderEvents`, objects defining a certain asset to be traded, submitted to a `TDABroker` instance to be executed via the TDA API. A sample constant weight, dollar-cost-averaging strategy can be seen below:
 
 ```python
-from tda import auth, client
-from algo_trade.account import AccountClient
+from algo_trade.strategy import Strategy
 
+class SpyIwmDCA(Strategy):
+    def calculate_signals(self):
+        target_weight = { 'SPY': 0.75, 'IWM': 0.25 }
+        return target_weight
+```
 
+`TDABroker` is a broker instance that feeds data to strategies as well as executes trades. The object also contains a `rebalance` method to help individuals with strategies that return a target portfolio asset weighting rather than signals/orders. Currently, `algo-trade` does not support any form of signal parsing into `OrderEvents`. Adding onto the above example, a sample portfolio rebalancing can be seen below:
+
+```python
+from algo_trade.broker import TDABroker
+from queue import Queue
+
+event_queue = Queue()
 tda_client = auth.easy_client(
         api_key = API_KEY, 
         redirect_uri = REDIRECT_URI,
         token_path = TOKEN_PATH,
     )
+tda_broker = TDABroker(tda_client, TDA_ACC_ID, event_queue, None)
 
-account = AccountClient(client=tda_client, ACC_ID=ACC_ID)
+# Create dummy constants for portfolio rebalancing
+balance = 100000.0
+price = { 'SPY': 300, 'IWM': 200 }
+current_asset_allocation = { 'MMDA1': 1.0 } # 'MMDA1' is the cash equivalent for TDAmeritrade
+target_weight = { 'SPY': 0.75, 'IWM': 0.25 }
+
+# Rebalance portfolio
+tda_broker.rebalance(balance, price, target_weight, current_asset_allocation)
+
+# Execute created orders
+while not event_queue.empty():
+    next_order = event_queue.get()
+    tda_broker.execute_order(next_order)
 ```
 
-`Portfolio` is the container for algorithmic strategies and can be considered where all the logic, documentation, and indicators the user wants to establish should be placed. A sample definition and instantiation of the `Portfolio` class can be seen below, implementing a dollar-cost-averaging of SPY and IWM using a 75:25 weighting:
+`TDAAccountClient` is a general class that gives account information, including outstanding orders, balances, cash, and position. The main use for this, outside of general account information, is to get current cash balance and input it into the `TDABroker` rebalance method to do dollar-cost-averaging. The same sub-sample code above but for dollar-cost-averaging:
 
 ```python
-from algo_trade.portfolio import Portfolio
-import pandas as pd
+from algo_trade.broker import TDABroker
+from algo_trade.account import TDAAccountClient
+from queue import Queue
+tda_client = auth.easy_client(
+        api_key = API_KEY, 
+        redirect_uri = REDIRECT_URI,
+        token_path = TOKEN_PATH,
+    )
+tda_broker = TDABroker(tda_client, TDA_ACC_ID, event_queue, None)
+tda_account = TDAAccountClient(tda_client, TDA_ACC_ID)
 
+# Create dummy constants for portfolio rebalancing
+balance = tda_account.cash
+price = { 'SPY': 300, 'IWM': 200 }
+target_weight = { 'SPY': 0.75, 'IWM': 0.25 }
 
-class SpyIwmStrategy(Portfolio):
-    population = ['SPY', 'IWM']
+# Rebalance portfolio
+tda_broker.rebalance(balance, price, target_weight)
 
-    def strategy(self):
-        return pd.DataFrame(
-            data={
-                'ticker': population,
-                'weight': [0.75, 0.25]
-            }
-        )
-
-port_strat = SpyIwmStrategy()
-print(port_strat.run())
+# Execute created orders
+while not event_queue.empty():
+    next_order = event_queue.get()
+    tda_broker.execute_order(next_order)
 ```
+(Note: Omitting the current asset allocation in the `rebalance` method is equivalent to assuming the entire `balance` variable is cash)
 
-An important but not strictly needed class (depending on how you intend to set up your strategy and whether you need data) is the `DataBuilder` class, also present in the `portfolio.py` module. `DataBuilder` allows you to get data, using either `yfinance` or `tda-api`, to perform necessary calculations in your strategy. A sample instantiation of `DataBuilder` to get data via TDAmeritrade can be seen below:
+## Backtesting
 
-```python
-from tda import auth, client
-from algo_trade.portfolio import DataBuilder
-
-
-data_builder = DataBuilder(client=tda_client) # tda_client created in above code sample
-data_builder.TDAmeritrade(
-    port_strat,
-    port_strat.population,
-)
-print(port_strat.holdings)
-```
-
-Stock level data are all added to the `Portfolio` object as `Stock` objects which contain their symbol as well as historical price data stored as a dataframe.
-
-Trade orders are created by the `AccountClient` by comparing the current account portfolio weights against target portfolio weights, selling and buying stocks as necessary to get as close to the target portfolio weights as possible. Below is an example of a `Portfolio` strategy returning target portfolio weights to the `AccountClient` which calculates the difference, creates the orders, and submits the order onto the TDAmeritrade platform:
-
-```python
-target_weights = port_strat.run()
-account.buildOrder(target_weights)
-account.placeOrderTDAmeritrade()
-```
-
-Lastly, the `indicator.py` module contains a series of pre-defined calculations that a use can use within a strategy to calculate metrics such as volatility, sharpe ratio, mean, geometric mean, etc. This module provides a toolset that users can leverage but is not strictly necessary. Most calculations are done on dataframes, so it is relatively simple to create a personal library of indicators if desired.
+Part of every good 
 
 ## FAQ
 
