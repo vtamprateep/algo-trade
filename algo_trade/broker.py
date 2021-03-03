@@ -31,11 +31,12 @@ class SimulatedBroker(Broker):
     :param ticker_list: List of ticker strings
     :param test: Helper for unittest - blocks importing of CSV files
     '''
-    def __init__(self, events, ticker_list, csv_dir=None):
+    def __init__(self, events, ticker_list, data=None, csv_dir=None):
         # Initialization states
         self.events = events
-        self.csv_dir = csv_dir
         self.ticker_list = ticker_list
+        self.data = data
+        self.csv_dir = csv_dir
 
         # Data elements
         self.ticker_data = dict()

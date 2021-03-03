@@ -20,20 +20,25 @@ class Backtest(object):
     :param portfolio: (Class) Keeps track of portfolio current and prior positions
     :param strategy: (Class) Generates signals based on market data
     '''
-    def __init__(self, csv_dir, ticker_list, initial_capital, heartbeat, start_date, data_handler, execution_handler, portfolio, strategy):
-        self.csv_dir = csv_dir
+    def __init__(self, ticker_list, start_date, strategy_class, broker_class, portfolio_class, data=None, csv_dir=None, initial_capital=100000.0, heartbeat=0.0):
+        # Assign state class variables
         self.ticker_list = ticker_list
         self.initial_capital = initial_capital
-        self.heartbeat = heartbeat
         self.start_date = start_date
+        self.data = data
+        self.csv_dir = csv_dir
+        self.heartbeat = heartbeat
+        
 
-        self.data_handler_cls = data_handler
-        self.execution_handler_cls = execution_handler
-        self.portfolio_cls = portfolio
-        self.strategy_cls = strategy
+        # Instance classes
+        self.strategy_class = strategy_class
+        self.broker_class = broker_class
+        self.portfolio_class = portfolio_class
 
+        # Create event queue that all Event objects are queued into
         self.events = queue.Queue()
 
+        # Backtest metrics
         self.signals = 0
         self.orders = 0
         self.fills = 0
@@ -45,11 +50,10 @@ class Backtest(object):
         '''
         Generates trading instance objects from their class types.
         '''
-        print('Creating DataHandler, Strategy, Portfolio, and ExecutionHandler')
-        self.data_handler = self.data_handler_cls(self.events, self.csv_dir, self.ticker_list) # This is assuming HistoricCSVDataHandler class
-        self.strategy = self.strategy_cls(self.data_handler, self.events)
-        self.portfolio = self.portfolio_cls(self.data_handler, self.events, self.start_date, self.initial_capital)
-        self.execution_handler = self.execution_handler_cls(self.events)
+        print('Creating DataHandler, Strategy, Broker, and Portfolio objects...')
+        self.broker = self.broker_class(self.events, self.ticker_list, self.data, self.csv_dir)
+        self.strategy = self.strategy_class(self.broker, self.events)
+        self.portfolio = self.portfolio_class(self.broker, self.events, self.start_date, self.initial_capital)
 
     def _run_backtest(self):
         '''
@@ -81,7 +85,7 @@ class Backtest(object):
                             self.portfolio.update_signal(event)
                         elif event.type == 'ORDER':
                             self.orders += 1
-                            self.execution_handler.execute_order(event)
+                            self.broker.execute_order(event)
                         elif event.type == 'FILL':
                             self.fills += 1
                             self.portfolio.update_fill(event)
