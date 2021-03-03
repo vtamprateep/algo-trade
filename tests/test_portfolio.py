@@ -48,7 +48,7 @@ class TestModuleFunction(unittest.TestCase):
         self.assertDictEqual(self.all_holdings[-1], expected_entry_holdings)
 
     def test_update_fill(self):
-        test_fill = FillEvent(datetime.utcnow(), 'SPY', 'ARCA', 10, 'BUY', None)
+        test_fill = FillEvent(datetime.utcnow(), 'SPY', 'ARCA', 10, 'BUY', 2000)
         self.test_portfolio.update_fill(test_fill)
 
         self.assertEqual(self.test_portfolio.current_positions['SPY'], 10)
@@ -58,11 +58,10 @@ class TestModuleFunction(unittest.TestCase):
         self.assertEqual(self.test_portfolio.current_holdings['total'], 100000.0)
 
     def test_update_signal(self):
-        
-
         test_signal_long = SignalEvent(0, 'SPY', datetime.utcnow(), 'LONG', 1)
         test_signal_short = SignalEvent(0, 'SPY', datetime.utcnow(), 'SHORT', 1)
         test_signal_exit = SignalEvent(0, 'SPY', datetime.utcnow(), 'EXIT', 1)
+        test_fill = FillEvent(datetime.utcnow(), 'SPY', 'ARCA', 10, 'BUY', 2000)
 
         self.test_portfolio.update_signal(test_signal_long)
         output_order_long = self.test_portfolio.events.get()
@@ -73,7 +72,6 @@ class TestModuleFunction(unittest.TestCase):
         expected_order_short = OrderEvent('SPY', 100, 'SELL', 'MARKET')
 
         # Create non-zero SPY holding to test EXIT signal
-        test_fill = FillEvent(datetime.utcnow(), 'SPY', 'ARCA', 10, 'BUY', None)
         self.test_portfolio.update_fill(test_fill)
         
         self.test_portfolio.update_signal(test_signal_exit)

@@ -1,3 +1,7 @@
+'''
+Deprecated 3.1.2021: Roll data methods into broker.py
+'''
+
 from abc import ABCMeta, abstractmethod
 
 import os
@@ -6,12 +10,10 @@ import pandas as pd
 
 from algo_trade.event import MarketEvent
 
-class DataHandler(object):
+class DataHandler(metaclass=ABCMeta):
     '''
     Abstract base class providing interface for all subsequent data handlers. Goal is to output a generated set of bars (OHLCVI) for each symbol requested.
     '''
-    __metaclass__ = ABCMeta
-
     @abstractmethod
     def get_latest_bar(self, ticker):
         raise NotImplementedError('Should implement get_latest_bar()')

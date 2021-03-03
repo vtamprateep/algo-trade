@@ -112,6 +112,9 @@ class Portfolio:
     ##################################################
     # Update holdings/positions from FillEvent methods
 
+    def _validate_fill(self, fill):
+        pass
+
     def _update_positions_from_fill(self, fill):
         '''
         Takes a FillEvent object and updates position matrix to reflect the new position.
@@ -134,8 +137,7 @@ class Portfolio:
         if fill.direction == 'SELL':
             fill_dir = -1
 
-        fill_cost = self.bars.get_latest_bar_value(fill.ticker, 'adj_close')
-        cost = fill_dir * fill_cost * fill.quantity
+        cost = fill_dir * fill.fill_cost
         self.current_holdings[fill.ticker] += cost
         self.current_holdings['commission'] += fill.commission
         self.current_holdings['cash'] -= (cost + fill.commission)
