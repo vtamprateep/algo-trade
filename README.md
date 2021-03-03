@@ -27,6 +27,7 @@ class SpyIwmDCA(Strategy):
 
 ```python
 from algo_trade.broker import TDABroker
+from tda import auth, client
 from queue import Queue
 
 event_queue = Queue()
@@ -57,7 +58,9 @@ while not event_queue.empty():
 ```python
 from algo_trade.broker import TDABroker
 from algo_trade.account import TDAAccountClient
+from tda import auth, client
 from queue import Queue
+
 tda_client = auth.easy_client(
         api_key = API_KEY, 
         redirect_uri = REDIRECT_URI,
@@ -83,7 +86,7 @@ while not event_queue.empty():
 
 ## Backtesting
 
-Part of every good 
+[WORK IN PROGRESS]
 
 ## FAQ
 
